@@ -96,8 +96,7 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private int mCircleHeight;
 
-    // Whether the client has set a custom starting position;
-
+    //刷新动态的Listener,在动画结束时刷新结束
     private Animation.AnimationListener mRefreshListener = new Animation.AnimationListener() {
         @Override
         public void onAnimationStart(Animation animation) {
@@ -133,8 +132,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 if (mScale) {
                     setAnimationProgress(0 /* animation complete and view is hidden */);
                 } else {
-                    setTargetOffsetTopAndBottom(mOriginalOffsetTop - mCurrentTargetOffsetTop,
-                            true /* requires update */);
+                    setTargetOffsetTopAndBottom(mOriginalOffsetTop - mCurrentTargetOffsetTop);
                 }
             }
             mCurrentTargetOffsetTop = mTopLoadingView.getTop();
@@ -198,14 +196,13 @@ public class SuperRefreshLayout extends ViewGroup {
         mCircleWidth = (int) (CIRCLE_DIAMETER * metrics.density);
         mCircleHeight = (int) (CIRCLE_DIAMETER * metrics.density);
 
-        createProgressView();
+        createTopLoadingView();
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
         // the absolute offset has to take into account that the circle starts at an offset
         mSpinnerFinalOffset = DEFAULT_CIRCLE_TARGET * metrics.density;
-        //TODO:: why delete
-//        mTotalDragDistance = mSpinnerFinalOffset;
     }
 
+    //绘制子View的顺序
     protected int getChildDrawingOrder(int childCount, int i) {
         if (mTopLoadingViewIndex < 0) {
             return i;
@@ -221,18 +218,11 @@ public class SuperRefreshLayout extends ViewGroup {
         }
     }
 
-    private void createProgressView() {
+    //创建顶部的LoadingView
+    private void createTopLoadingView() {
         mTopLoadingView = new TopLoadingView(getContext());
         mTopLoadingView.setVisibility(View.GONE);
         addView(mTopLoadingView);
-    }
-
-    /**
-     * Set the listener to be notified when a refresh is triggered via the swipe
-     * gesture.
-     */
-    public void setOnRefreshListener(SwipeListener listener) {
-        mSwipeListener = listener;
     }
 
     /**
@@ -255,29 +245,12 @@ public class SuperRefreshLayout extends ViewGroup {
                     endTarget = (int) (mSpinnerFinalOffset - Math.abs(mOriginalOffsetTop));
                     break;
             }
-            setTargetOffsetTopAndBottom(endTarget - mCurrentTargetOffsetTop,
-                    true /* requires update */);
+            setTargetOffsetTopAndBottom(endTarget - mCurrentTargetOffsetTop);
             mNotify = false;
             startScaleUpAnimation(mRefreshListener);
         } else {
             setRefreshing(refreshing, false /* notify */);
         }
-    }
-
-    private void startScaleUpAnimation(Animation.AnimationListener listener) {
-        mTopLoadingView.setVisibility(View.VISIBLE);
-        mScaleAnimation = new Animation() {
-            @Override
-            public void applyTransformation(float interpolatedTime, Transformation t) {
-                setAnimationProgress(interpolatedTime);
-            }
-        };
-        mScaleAnimation.setDuration(mMediumAnimationDuration);
-        if (listener != null) {
-            mTopLoadingView.setAnimationListener(listener);
-        }
-        mTopLoadingView.clearAnimation();
-        mTopLoadingView.startAnimation(mScaleAnimation);
     }
 
     /**
@@ -304,6 +277,24 @@ public class SuperRefreshLayout extends ViewGroup {
         }
     }
 
+    //开始逐渐放大的动画
+    private void startScaleUpAnimation(Animation.AnimationListener listener) {
+        mTopLoadingView.setVisibility(View.VISIBLE);
+        mScaleAnimation = new Animation() {
+            @Override
+            public void applyTransformation(float interpolatedTime, Transformation t) {
+                setAnimationProgress(interpolatedTime);
+            }
+        };
+        mScaleAnimation.setDuration(mMediumAnimationDuration);
+        if (listener != null) {
+            mTopLoadingView.setAnimationListener(listener);
+        }
+        mTopLoadingView.clearAnimation();
+        mTopLoadingView.startAnimation(mScaleAnimation);
+    }
+
+    //开始逐渐变小的动画
     private void startScaleDownAnimation(Animation.AnimationListener listener) {
         mScaleDownAnimation = new Animation() {
             @Override
@@ -325,6 +316,7 @@ public class SuperRefreshLayout extends ViewGroup {
         return mRefreshing;
     }
 
+    //确认子View(刷新的View),同时设置开始刷新的高度
     private void ensureTarget() {
         // Don't bother getting the parent height if the parent hasn't been laid
         // out yet.
@@ -419,6 +411,7 @@ public class SuperRefreshLayout extends ViewGroup {
     }
 
     /**
+     * 判断targetView能否继续往上拉动
      * @return Whether it is possible for the child view of this layout to
      *         scroll up. Override this if the child view is a custom view.
      */
@@ -454,7 +447,7 @@ public class SuperRefreshLayout extends ViewGroup {
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                setTargetOffsetTopAndBottom(mOriginalOffsetTop - mTopLoadingView.getTop(), true);
+                setTargetOffsetTopAndBottom(mOriginalOffsetTop - mTopLoadingView.getTop());
                 mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
                 mIsBeingDragged = false;
                 final float initialDownY = getMotionEventY(ev, mActivePointerId);
@@ -628,8 +621,7 @@ public class SuperRefreshLayout extends ViewGroup {
                         }
 
                     }
-                    setTargetOffsetTopAndBottom(targetY - mCurrentTargetOffsetTop,
-                            true /* requires update */);
+                    setTargetOffsetTopAndBottom(targetY - mCurrentTargetOffsetTop);
                 }
                 break;
             }
@@ -744,14 +736,14 @@ public class SuperRefreshLayout extends ViewGroup {
             }
             targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
             int offset = targetTop - mTopLoadingView.getTop();
-            setTargetOffsetTopAndBottom(offset, false /* requires update */);
+            setTargetOffsetTopAndBottom(offset);
         }
     };
 
     private void moveToStart(float interpolatedTime) {
         int targetTop = (mFrom + (int) ((mOriginalOffsetTop - mFrom) * interpolatedTime));
         int offset = targetTop - mTopLoadingView.getTop();
-        setTargetOffsetTopAndBottom(offset, false /* requires update */);
+        setTargetOffsetTopAndBottom(offset);
     }
 
     private final Animation mAnimateToStartPosition = new Animation() {
@@ -782,12 +774,13 @@ public class SuperRefreshLayout extends ViewGroup {
         mTopLoadingView.startAnimation(mScaleDownToStartAnimation);
     }
 
-    private void setTargetOffsetTopAndBottom(int offset, boolean requiresUpdate) {
+    private void setTargetOffsetTopAndBottom(int offset) {
         mTopLoadingView.bringToFront();
         mTopLoadingView.offsetTopAndBottom(offset);
         mCurrentTargetOffsetTop = mTopLoadingView.getTop();
     }
 
+    //第二个手指按下
     private void onSecondaryPointerUp(MotionEvent ev) {
         final int pointerIndex = MotionEventCompat.getActionIndex(ev);
         final int pointerId = MotionEventCompat.getPointerId(ev, pointerIndex);
@@ -886,5 +879,13 @@ public class SuperRefreshLayout extends ViewGroup {
      */
     public void setSwipeBothListener(SwipeBothListener mSwipeBothListener) {
         this.mSwipeBothListener = mSwipeBothListener;
+    }
+
+    /**
+     * Set the listener to be notified when a refresh is triggered via the swipe
+     * gesture.
+     */
+    public void setOnRefreshListener(SwipeListener listener) {
+        mSwipeListener = listener;
     }
 }

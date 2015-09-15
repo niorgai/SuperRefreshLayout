@@ -32,7 +32,7 @@ public class TopLoadingView extends FrameLayout{
     }
 
     public void setProgress(float pre) {
-        progress.rotateView(pre );
+        progress.rotateView(pre);
     }
 
     public void startAnimation(){
