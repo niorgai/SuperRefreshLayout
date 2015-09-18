@@ -7,10 +7,11 @@ import android.view.MenuItem;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import niorgai.qiu.superrefreshlayout.refresh.RefreshDirection;
 import niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout;
 import niorgai.qiu.superrefreshlayout.test.ListAdapter;
 
-public class MainActivity extends AppCompatActivity implements SuperRefreshLayout.SwipeListener{
+public class MainActivity extends AppCompatActivity implements SuperRefreshLayout.SwipeBothListener{
     private SuperRefreshLayout refreshLayout;
     private ListView listView;
 
@@ -27,7 +28,8 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
         refreshLayout = (SuperRefreshLayout) findViewById(R.id.refresh_layout);
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(new ListAdapter(this));
-        refreshLayout.setOnRefreshListener(this);
+        refreshLayout.setSwipeDirection(RefreshDirection.BOTH);
+        refreshLayout.setSwipeBothListener(this);
     }
 
     @Override
@@ -54,7 +56,19 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
 
     @Override
     public void refreshFromStart() {
-        Toast.makeText(MainActivity.this, "开始刷新", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, "头部开始刷新", Toast.LENGTH_SHORT).show();
+        refreshLayout.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(MainActivity.this, "刷新完成", Toast.LENGTH_SHORT).show();
+                refreshLayout.setRefreshing(false);
+            }
+        }, 3000);
+    }
+
+    @Override
+    public void refreshFromEnd() {
+        Toast.makeText(MainActivity.this, "底部开始刷新", Toast.LENGTH_SHORT).show();
         refreshLayout.postDelayed(new Runnable() {
             @Override
             public void run() {

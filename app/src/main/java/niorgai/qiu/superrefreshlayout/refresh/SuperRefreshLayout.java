@@ -72,7 +72,11 @@ public class SuperRefreshLayout extends ViewGroup {
             R.styleable.SuperRefreshLayout_direction
     };
 
+    private CommonLoadingView mLoadingView;
+
     private TopLoadingView mTopLoadingView;
+
+    private BottomLoadingView mBottomLoadingView;
 
     private int mTopLoadingViewIndex = -1;
 
@@ -111,7 +115,7 @@ public class SuperRefreshLayout extends ViewGroup {
             if (mRefreshing) {
                 // Make sure the progress view is fully visible
                 if (mNotify) {
-                    mTopLoadingView.startAnimation();
+                    mLoadingView.startAnimation();
                     if (mBothDirection) {
                         if (mSwipeBothListener != null) {
                             if (mDirection == RefreshDirection.PULL_FROM_START) {
@@ -127,7 +131,7 @@ public class SuperRefreshLayout extends ViewGroup {
                     }
                 }
             } else {
-                mTopLoadingView.setVisibility(View.GONE);
+                mLoadingView.setVisibility(View.GONE);
                 // Return the circle to its start position
                 if (mScale) {
                     setAnimationProgress(0 /* animation complete and view is hidden */);
@@ -135,7 +139,7 @@ public class SuperRefreshLayout extends ViewGroup {
                     setTargetOffsetTopAndBottom(mOriginalOffsetTop - mCurrentTargetOffsetTop);
                 }
             }
-            mCurrentTargetOffsetTop = mTopLoadingView.getTop();
+            mCurrentTargetOffsetTop = mLoadingView.getTop();
         }
     };
 
@@ -197,6 +201,7 @@ public class SuperRefreshLayout extends ViewGroup {
         mCircleHeight = (int) (CIRCLE_DIAMETER * metrics.density);
 
         createTopLoadingView();
+        createBottomLoadingView();
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
         // the absolute offset has to take into account that the circle starts at an offset
         mSpinnerFinalOffset = DEFAULT_CIRCLE_TARGET * metrics.density;
@@ -223,6 +228,13 @@ public class SuperRefreshLayout extends ViewGroup {
         mTopLoadingView = new TopLoadingView(getContext());
         mTopLoadingView.setVisibility(View.GONE);
         addView(mTopLoadingView);
+    }
+
+    //创建底部的LoadingView
+    private void createBottomLoadingView() {
+        mBottomLoadingView = new BottomLoadingView(getContext());
+        mBottomLoadingView.setVisibility(View.GONE);
+        addView(mBottomLoadingView);
     }
 
     /**
@@ -258,9 +270,9 @@ public class SuperRefreshLayout extends ViewGroup {
      * @param progress
      */
     private void setAnimationProgress(float progress) {
-        ViewCompat.setScaleX(mTopLoadingView, progress);
-        ViewCompat.setScaleY(mTopLoadingView, progress);
-        mTopLoadingView.setProgress(progress);
+        ViewCompat.setScaleX(mLoadingView, progress);
+        ViewCompat.setScaleY(mLoadingView, progress);
+        mLoadingView.setProgress(progress);
     }
 
     private void setRefreshing(boolean refreshing, final boolean notify) {
@@ -272,14 +284,14 @@ public class SuperRefreshLayout extends ViewGroup {
                 animateOffsetToCorrectPosition(mCurrentTargetOffsetTop, mRefreshListener);
             } else {
                 startScaleDownAnimation(mRefreshListener);
-                mTopLoadingView.stopAnimation();
+                mLoadingView.stopAnimation();
             }
         }
     }
 
     //开始逐渐放大的动画
     private void startScaleUpAnimation(Animation.AnimationListener listener) {
-        mTopLoadingView.setVisibility(View.VISIBLE);
+        mLoadingView.setVisibility(View.VISIBLE);
         mScaleAnimation = new Animation() {
             @Override
             public void applyTransformation(float interpolatedTime, Transformation t) {
@@ -288,10 +300,10 @@ public class SuperRefreshLayout extends ViewGroup {
         };
         mScaleAnimation.setDuration(mMediumAnimationDuration);
         if (listener != null) {
-            mTopLoadingView.setAnimationListener(listener);
+            mLoadingView.setAnimationListener(listener);
         }
-        mTopLoadingView.clearAnimation();
-        mTopLoadingView.startAnimation(mScaleAnimation);
+        mLoadingView.clearAnimation();
+        mLoadingView.startAnimation(mScaleAnimation);
     }
 
     //开始逐渐变小的动画
@@ -303,9 +315,9 @@ public class SuperRefreshLayout extends ViewGroup {
             }
         };
         mScaleDownAnimation.setDuration(SCALE_DOWN_DURATION);
-        mTopLoadingView.setAnimationListener(listener);
-        mTopLoadingView.clearAnimation();
-        mTopLoadingView.startAnimation(mScaleDownAnimation);
+        mLoadingView.setAnimationListener(listener);
+        mLoadingView.clearAnimation();
+        mLoadingView.startAnimation(mScaleDownAnimation);
     }
 
     /**
@@ -323,7 +335,7 @@ public class SuperRefreshLayout extends ViewGroup {
         if (mTarget == null) {
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
-                if (!child.equals(mTopLoadingView)) {
+                if (!child.equals(mTopLoadingView) && !child.equals(mBottomLoadingView)) {
                     mTarget = child;
                     break;
                 }
@@ -367,9 +379,9 @@ public class SuperRefreshLayout extends ViewGroup {
         final int childWidth = width - getPaddingLeft() - getPaddingRight();
         final int childHeight = height - getPaddingTop() - getPaddingBottom();
         child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
-        int circleWidth = mTopLoadingView.getMeasuredWidth();
-        int circleHeight = mTopLoadingView.getMeasuredHeight();
-        mTopLoadingView.layout((width / 2 - circleWidth / 2), mCurrentTargetOffsetTop,
+        int circleWidth = mLoadingView.getMeasuredWidth();
+        int circleHeight = mLoadingView.getMeasuredHeight();
+        mLoadingView.layout((width / 2 - circleWidth / 2), mCurrentTargetOffsetTop,
                 (width / 2 + circleWidth / 2), mCurrentTargetOffsetTop + circleHeight);
     }
 
@@ -386,24 +398,28 @@ public class SuperRefreshLayout extends ViewGroup {
                 getMeasuredWidth() - getPaddingLeft() - getPaddingRight(),
                 MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
                 getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY));
-        mTopLoadingView.measure(MeasureSpec.makeMeasureSpec(mCircleWidth, MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(mCircleHeight, MeasureSpec.EXACTLY));
         if (!mOriginalOffsetCalculated) {
             mOriginalOffsetCalculated = true;
             switch (mDirection) {
                 case PULL_FROM_END:
+                    mLoadingView = mBottomLoadingView;
                     mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                     break;
                 case PULL_FROM_START:
                 default:
-                    mCurrentTargetOffsetTop = mOriginalOffsetTop = -mTopLoadingView.getMeasuredHeight();
+                    mLoadingView = mTopLoadingView;
+                    mCurrentTargetOffsetTop = mOriginalOffsetTop = -mLoadingView.getMeasuredHeight();
                     break;
             }
+        }
+        if (mLoadingView != null) {
+            mLoadingView.measure(MeasureSpec.makeMeasureSpec(mCircleWidth, MeasureSpec.EXACTLY),
+                    MeasureSpec.makeMeasureSpec(mCircleHeight, MeasureSpec.EXACTLY));
         }
         mTopLoadingViewIndex = -1;
         // Get the index of the loadingView.
         for (int index = 0; index < getChildCount(); index++) {
-            if (getChildAt(index) == mTopLoadingView) {
+            if (getChildAt(index) == mLoadingView) {
                 mTopLoadingViewIndex = index;
                 break;
             }
@@ -431,6 +447,7 @@ public class SuperRefreshLayout extends ViewGroup {
 
         switch (mDirection) {
             case PULL_FROM_END:
+                mLoadingView = mBottomLoadingView;
                 if (!isEnabled() || mReturningToStart || (!mBothDirection && canChildScrollDown()) || mRefreshing) {
                     // Fail fast if we're not in a state where a swipe is possible
                     return false;
@@ -438,6 +455,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 break;
             case PULL_FROM_START:
             default:
+                mLoadingView = mTopLoadingView;
                 if (!isEnabled() || mReturningToStart || (!mBothDirection && canChildScrollUp()) || mRefreshing) {
                     // Fail fast if we're not in a state where a swipe is possible
                     return false;
@@ -447,7 +465,7 @@ public class SuperRefreshLayout extends ViewGroup {
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-                setTargetOffsetTopAndBottom(mOriginalOffsetTop - mTopLoadingView.getTop());
+                setTargetOffsetTopAndBottom(mOriginalOffsetTop - mLoadingView.getTop());
                 mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
                 mIsBeingDragged = false;
                 final float initialDownY = getMotionEventY(ev, mActivePointerId);
@@ -608,12 +626,12 @@ public class SuperRefreshLayout extends ViewGroup {
                             break;
                     }
                     // where 1.0f is a full circle
-                    if (mTopLoadingView.getVisibility() != View.VISIBLE) {
-                        mTopLoadingView.setVisibility(View.VISIBLE);
+                    if (mLoadingView.getVisibility() != View.VISIBLE) {
+                        mLoadingView.setVisibility(View.VISIBLE);
                     }
                     if (!mScale) {
-                        ViewCompat.setScaleX(mTopLoadingView, 1f);
-                        ViewCompat.setScaleY(mTopLoadingView, 1f);
+                        ViewCompat.setScaleX(mLoadingView, 1f);
+                        ViewCompat.setScaleY(mLoadingView, 1f);
                     }
                     if (overScrollTop < mTotalDragDistance) {
                         if (mScale) {
@@ -697,10 +715,10 @@ public class SuperRefreshLayout extends ViewGroup {
         mAnimateToCorrectPosition.setDuration(ANIMATE_TO_TRIGGER_DURATION);
         mAnimateToCorrectPosition.setInterpolator(mDecelerateInterpolator);
         if (listener != null) {
-            mTopLoadingView.setAnimationListener(listener);
+            mLoadingView.setAnimationListener(listener);
         }
-        mTopLoadingView.clearAnimation();
-        mTopLoadingView.startAnimation(mAnimateToCorrectPosition);
+        mLoadingView.clearAnimation();
+        mLoadingView.startAnimation(mAnimateToCorrectPosition);
     }
 
     private void animateOffsetToStartPosition(int from, Animation.AnimationListener listener) {
@@ -713,10 +731,10 @@ public class SuperRefreshLayout extends ViewGroup {
             mAnimateToStartPosition.setDuration(ANIMATE_TO_START_DURATION);
             mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
             if (listener != null) {
-                mTopLoadingView.setAnimationListener(listener);
+                mLoadingView.setAnimationListener(listener);
             }
-            mTopLoadingView.clearAnimation();
-            mTopLoadingView.startAnimation(mAnimateToStartPosition);
+            mLoadingView.clearAnimation();
+            mLoadingView.startAnimation(mAnimateToStartPosition);
         }
     }
 
@@ -735,14 +753,14 @@ public class SuperRefreshLayout extends ViewGroup {
                     break;
             }
             targetTop = (mFrom + (int) ((endTarget - mFrom) * interpolatedTime));
-            int offset = targetTop - mTopLoadingView.getTop();
+            int offset = targetTop - mLoadingView.getTop();
             setTargetOffsetTopAndBottom(offset);
         }
     };
 
     private void moveToStart(float interpolatedTime) {
         int targetTop = (mFrom + (int) ((mOriginalOffsetTop - mFrom) * interpolatedTime));
-        int offset = targetTop - mTopLoadingView.getTop();
+        int offset = targetTop - mLoadingView.getTop();
         setTargetOffsetTopAndBottom(offset);
     }
 
@@ -756,7 +774,7 @@ public class SuperRefreshLayout extends ViewGroup {
     private void startScaleDownReturnToStartAnimation(int from,
                                                       Animation.AnimationListener listener) {
         mFrom = from;
-        mStartingScale = ViewCompat.getScaleX(mTopLoadingView);
+        mStartingScale = ViewCompat.getScaleX(mLoadingView);
         mScaleDownToStartAnimation = new Animation() {
             @Override
 
@@ -768,16 +786,16 @@ public class SuperRefreshLayout extends ViewGroup {
         };
         mScaleDownToStartAnimation.setDuration(SCALE_DOWN_DURATION);
         if (listener != null) {
-            mTopLoadingView.setAnimationListener(listener);
+            mLoadingView.setAnimationListener(listener);
         }
-        mTopLoadingView.clearAnimation();
-        mTopLoadingView.startAnimation(mScaleDownToStartAnimation);
+        mLoadingView.clearAnimation();
+        mLoadingView.startAnimation(mScaleDownToStartAnimation);
     }
 
     private void setTargetOffsetTopAndBottom(int offset) {
-        mTopLoadingView.bringToFront();
-        mTopLoadingView.offsetTopAndBottom(offset);
-        mCurrentTargetOffsetTop = mTopLoadingView.getTop();
+        mLoadingView.bringToFront();
+        mLoadingView.offsetTopAndBottom(offset);
+        mCurrentTargetOffsetTop = mLoadingView.getTop();
     }
 
     //第二个手指按下
@@ -808,11 +826,13 @@ public class SuperRefreshLayout extends ViewGroup {
 
         switch (direction) {
             case PULL_FROM_END:
+                mLoadingView = mBottomLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                 break;
             case PULL_FROM_START:
             default:
-                mCurrentTargetOffsetTop = mOriginalOffsetTop = -mTopLoadingView.getMeasuredHeight();
+                mLoadingView = mTopLoadingView;
+                mCurrentTargetOffsetTop = mOriginalOffsetTop = -mLoadingView.getMeasuredHeight();
                 break;
         }
     }
@@ -828,11 +848,13 @@ public class SuperRefreshLayout extends ViewGroup {
         mDirection = direction;
         switch (mDirection) {
             case PULL_FROM_END:
+                mLoadingView = mBottomLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                 break;
             case PULL_FROM_START:
             default:
-                mCurrentTargetOffsetTop = mOriginalOffsetTop = -mTopLoadingView.getMeasuredHeight();
+                mLoadingView = mTopLoadingView;
+                mCurrentTargetOffsetTop = mOriginalOffsetTop = -mLoadingView.getMeasuredHeight();
                 break;
         }
     }
