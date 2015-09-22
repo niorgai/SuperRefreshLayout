@@ -35,5 +35,8 @@ public class BottomLoadingView extends CommonLoadingView{
         progress.stopAnimation();
     }
 
+    public void setViewAlpha(float alpha) {
+        progress.setAlpha(alpha);
+    }
 
 }

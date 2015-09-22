@@ -27,6 +27,10 @@ public class TopLoadingView extends CommonLoadingView{
         progress.rotateView(pre);
     }
 
+    public void setViewAlpha(float alpha) {
+        progress.setAlpha(alpha);
+    }
+
     public void startAnimation(){
         progress.startAnimation();
     }

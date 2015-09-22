@@ -86,12 +86,6 @@ public class SuperRefreshLayout extends ViewGroup {
 
     protected int mOriginalOffsetTop;
 
-    private Animation mScaleAnimation;
-
-    private Animation mScaleDownAnimation;
-
-    private Animation mScaleDownToStartAnimation;
-
     private float mSpinnerFinalOffset;
 
     private boolean mNotify;
@@ -267,12 +261,18 @@ public class SuperRefreshLayout extends ViewGroup {
 
     /**
      * 设置view旋转的百分比(0-1)
-     * @param progress
+     * @param pro
      */
-    private void setAnimationProgress(float progress) {
+    private void setAnimationProgress(float pro) {
+        //y = 2x/3 + 1/3,设置其从30%开始增长到100%
+        float progress = ((pro * 2) / 3) + (1f / 3f);
+        if (progress == 1f/3f) {
+            progress = 0;
+        }
         ViewCompat.setScaleX(mLoadingView, progress);
         ViewCompat.setScaleY(mLoadingView, progress);
         mLoadingView.setProgress(progress);
+        mLoadingView.setViewAlpha(progress);
     }
 
     private void setRefreshing(boolean refreshing, final boolean notify) {
@@ -292,7 +292,7 @@ public class SuperRefreshLayout extends ViewGroup {
     //开始逐渐放大的动画
     private void startScaleUpAnimation(Animation.AnimationListener listener) {
         mLoadingView.setVisibility(View.VISIBLE);
-        mScaleAnimation = new Animation() {
+        Animation mScaleAnimation = new Animation() {
             @Override
             public void applyTransformation(float interpolatedTime, Transformation t) {
                 setAnimationProgress(interpolatedTime);
@@ -306,18 +306,19 @@ public class SuperRefreshLayout extends ViewGroup {
         mLoadingView.startAnimation(mScaleAnimation);
     }
 
-    //开始逐渐变小的动画
+    //Loading动作结束后变小消失的动画
     private void startScaleDownAnimation(Animation.AnimationListener listener) {
-        mScaleDownAnimation = new Animation() {
-            @Override
-            public void applyTransformation(float interpolatedTime, Transformation t) {
-                setAnimationProgress(1 - interpolatedTime);
-            }
-        };
-        mScaleDownAnimation.setDuration(SCALE_DOWN_DURATION);
-        mLoadingView.setAnimationListener(listener);
-        mLoadingView.clearAnimation();
-        mLoadingView.startAnimation(mScaleDownAnimation);
+//        Animation mScaleDownAnimation = new Animation() {
+//            @Override
+//            public void applyTransformation(float interpolatedTime, Transformation t) {
+//                setAnimationProgress(1 - interpolatedTime);
+//            }
+//        };
+//        mScaleDownAnimation.setDuration(SCALE_DOWN_DURATION);
+//        mLoadingView.setAnimationListener(listener);
+//        mLoadingView.clearAnimation();
+//        mLoadingView.startAnimation(mScaleDownAnimation);
+        animateOffsetToStartPosition(mCurrentTargetOffsetTop, listener);
     }
 
     /**
@@ -341,6 +342,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 }
             }
         }
+        //设置开始Loading的距离
         if (mTotalDragDistance == -1) {
             if (getParent() != null && ((View)getParent()).getHeight() > 0) {
                 final DisplayMetrics metrics = getResources().getDisplayMetrics();
@@ -771,15 +773,16 @@ public class SuperRefreshLayout extends ViewGroup {
         }
     };
 
+    //没有拖动到滑动位置的情况下,从拖动位置滑动回顶部的动画
     private void startScaleDownReturnToStartAnimation(int from,
                                                       Animation.AnimationListener listener) {
         mFrom = from;
         mStartingScale = ViewCompat.getScaleX(mLoadingView);
-        mScaleDownToStartAnimation = new Animation() {
+        Animation mScaleDownToStartAnimation = new Animation() {
             @Override
 
             public void applyTransformation(float interpolatedTime, Transformation t) {
-                float targetScale = (mStartingScale + (-mStartingScale  * interpolatedTime));
+                float targetScale = (mStartingScale + (-mStartingScale * interpolatedTime));
                 setAnimationProgress(targetScale);
                 moveToStart(interpolatedTime);
             }

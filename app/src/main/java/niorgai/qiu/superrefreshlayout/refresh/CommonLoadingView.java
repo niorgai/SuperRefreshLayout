@@ -32,6 +32,9 @@ public abstract class CommonLoadingView extends FrameLayout{
     public void stopAnimation(){
     }
 
+    public void setViewAlpha(float alpha){
+    }
+
     @Override
     public void onAnimationStart() {
         super.onAnimationStart();
