@@ -5,6 +5,7 @@ import android.content.res.TypedArray;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -15,6 +16,8 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Transformation;
+import android.widget.AbsListView;
+import android.widget.ScrollView;
 
 import niorgai.qiu.superrefreshlayout.R;
 
@@ -336,7 +339,7 @@ public class SuperRefreshLayout extends ViewGroup {
         // Don't bother getting the parent height if the parent hasn't been laid
         // out yet.
         if (mTarget == null) {
-            for (int i = 0; i < getChildCount(); i++) {
+            for (int i=getChildCount()-1; i>=0; i--) {
                 View child = getChildAt(i);
                 if (!child.equals(mTopLoadingView) && !child.equals(mBottomLoadingView)) {
                     mTarget = child;
@@ -431,11 +434,20 @@ public class SuperRefreshLayout extends ViewGroup {
     }
 
     /**
-     * 判断targetView能否继续往上拉动
-     * @return Whether it is possible for the child view of this layout to
-     *         scroll up. Override this if the child view is a custom view.
+     * 如果targetView不是可滚动的View,遍历其childView找到第一个可滚动的View
+     * 判断该View能否继续往上拉动
+     * 否则判断targetView能否继续往上拉动
      */
     public boolean canChildScrollUp() {
+        if (!isScrollableChildView(mTarget) && mTarget instanceof ViewGroup) {
+            ViewGroup group = ((ViewGroup) mTarget);
+            for (int i=0; i<group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (isScrollableChildView(child)) {
+                    return ViewCompat.canScrollVertically(child, -1);
+                }
+            }
+        }
         return ViewCompat.canScrollVertically(mTarget, -1);
     }
 
@@ -874,11 +886,28 @@ public class SuperRefreshLayout extends ViewGroup {
     }
 
     /**
-     * 子View能否继续往下滑动
-     * @return
+     * 如果targetView不是可滚动的View,遍历其childView找到第一个可滚动的View
+     * 判断该View能否继续往下滚动
+     * 否则判断targetView能否继续往下滚动
      */
     public boolean canChildScrollDown() {
+        if (!isScrollableChildView(mTarget) && mTarget instanceof ViewGroup) {
+            ViewGroup group = ((ViewGroup) mTarget);
+            for (int i=0; i<group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (isScrollableChildView(child)) {
+                    return ViewCompat.canScrollVertically(child, 1);
+                }
+            }
+        }
         return ViewCompat.canScrollVertically(mTarget, 1);
+    }
+
+    /**
+     * 寻找可滚动的View
+     */
+    public boolean isScrollableChildView(View view) {
+        return view instanceof AbsListView || view instanceof ScrollView || view instanceof RecyclerView;
     }
 
     /**

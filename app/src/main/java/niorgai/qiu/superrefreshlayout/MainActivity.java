@@ -30,8 +30,7 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
         refreshLayout = (SuperRefreshLayout) findViewById(R.id.refresh_layout);
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(new MyAdapter(this));
-        emptyView = new EmptyView(this);
-        refreshLayout.addView(emptyView, refreshLayout.getChildCount() -1);
+        emptyView = (EmptyView) findViewById(R.id.empty_view);
         listView.setEmptyView(emptyView);
         refreshLayout.setSwipeDirection(RefreshDirection.BOTH);
         refreshLayout.setSwipeBothListener(this);

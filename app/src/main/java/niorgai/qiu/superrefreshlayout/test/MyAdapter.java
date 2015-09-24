@@ -20,7 +20,7 @@ public class MyAdapter extends ArrayAdapter<Integer> {
 
     @Override
     public int getCount() {
-        return 0;
+        return 90;
     }
 
     @Override
