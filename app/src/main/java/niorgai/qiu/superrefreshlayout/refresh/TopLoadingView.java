@@ -19,7 +19,7 @@ public class TopLoadingView extends CommonLoadingView{
 
     public TopLoadingView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        inflate(context, R.layout.refresh_layout, this);
+        inflate(context, R.layout.top_refresh_layout, this);
         progress = (RefreshProgress) findViewById(R.id.progress);
     }
 

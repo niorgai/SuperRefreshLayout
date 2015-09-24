@@ -9,11 +9,13 @@ import android.widget.Toast;
 
 import niorgai.qiu.superrefreshlayout.refresh.RefreshDirection;
 import niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout;
-import niorgai.qiu.superrefreshlayout.test.ListAdapter;
+import niorgai.qiu.superrefreshlayout.test.EmptyView;
+import niorgai.qiu.superrefreshlayout.test.MyAdapter;
 
 public class MainActivity extends AppCompatActivity implements SuperRefreshLayout.SwipeBothListener{
     private SuperRefreshLayout refreshLayout;
     private ListView listView;
+    private EmptyView emptyView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +29,10 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
     private void initViews() {
         refreshLayout = (SuperRefreshLayout) findViewById(R.id.refresh_layout);
         listView = (ListView) findViewById(R.id.list_view);
-        listView.setAdapter(new ListAdapter(this));
+        listView.setAdapter(new MyAdapter(this));
+        emptyView = new EmptyView(this);
+        refreshLayout.addView(emptyView, refreshLayout.getChildCount() -1);
+        listView.setEmptyView(emptyView);
         refreshLayout.setSwipeDirection(RefreshDirection.BOTH);
         refreshLayout.setSwipeBothListener(this);
     }

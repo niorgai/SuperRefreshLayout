@@ -2,6 +2,8 @@ package niorgai.qiu.superrefreshlayout.refresh;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import niorgai.qiu.superrefreshlayout.R;
 
@@ -11,7 +13,8 @@ import niorgai.qiu.superrefreshlayout.R;
  */
 public class BottomLoadingView extends CommonLoadingView{
 
-    private RefreshProgress progress;
+    private ProgressBar progress;
+    private ImageView imageView;
 
     public BottomLoadingView(Context context) {
         this(context, null);
@@ -19,20 +22,23 @@ public class BottomLoadingView extends CommonLoadingView{
 
     public BottomLoadingView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        inflate(context, R.layout.refresh_layout, this);
-        progress = (RefreshProgress) findViewById(R.id.progress);
+        inflate(context, R.layout.bottom_refresh_layout, this);
+        progress = (ProgressBar) findViewById(R.id.progress);
+        imageView = (ImageView) findViewById(R.id.img);
+        progress.setVisibility(GONE);
     }
 
     public void setProgress(float pre) {
-        progress.rotateView(pre);
     }
 
     public void startAnimation(){
-        progress.startAnimation();
+        imageView.setVisibility(GONE);
+        progress.setVisibility(VISIBLE);
     }
 
     public void stopAnimation(){
-        progress.stopAnimation();
+        imageView.setVisibility(VISIBLE);
+        progress.setVisibility(GONE);
     }
 
     public void setViewAlpha(float alpha) {

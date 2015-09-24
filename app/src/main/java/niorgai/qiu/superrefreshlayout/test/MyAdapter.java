@@ -12,15 +12,15 @@ import niorgai.qiu.superrefreshlayout.R;
  * 简单的ListAdapter
  * Created by qiu on 9/8/15.
  */
-public class ListAdapter extends ArrayAdapter<Integer> {
+public class MyAdapter extends ArrayAdapter<Integer> {
 
-    public ListAdapter(Context context) {
+    public MyAdapter(Context context) {
         super(context, R.layout.list_item);
     }
 
     @Override
     public int getCount() {
-        return 30;
+        return 0;
     }
 
     @Override

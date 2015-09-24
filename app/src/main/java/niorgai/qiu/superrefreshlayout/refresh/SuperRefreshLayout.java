@@ -306,7 +306,9 @@ public class SuperRefreshLayout extends ViewGroup {
         mLoadingView.startAnimation(mScaleAnimation);
     }
 
-    //Loading动作结束后变小消失的动画
+    /**
+     * Loading动作结束后变小消失的动画
+     * 改为向上滑动消失*/
     private void startScaleDownAnimation(Animation.AnimationListener listener) {
 //        Animation mScaleDownAnimation = new Animation() {
 //            @Override
@@ -674,7 +676,8 @@ public class SuperRefreshLayout extends ViewGroup {
                     default:
                         overScrollTop = (y - mInitialMotionY) * DRAG_RATE;
                         break;
-                }                mIsBeingDragged = false;
+                }
+                mIsBeingDragged = false;
                 if (overScrollTop > mTotalDragDistance) {
                     setRefreshing(true, true /* notify */);
                 } else {
