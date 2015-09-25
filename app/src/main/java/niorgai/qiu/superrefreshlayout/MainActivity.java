@@ -12,7 +12,7 @@ import niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout;
 import niorgai.qiu.superrefreshlayout.test.EmptyView;
 import niorgai.qiu.superrefreshlayout.test.MyAdapter;
 
-public class MainActivity extends AppCompatActivity implements SuperRefreshLayout.SwipeBothListener{
+public class MainActivity extends AppCompatActivity implements SuperRefreshLayout.SuperRefreshListener2 {
     private SuperRefreshLayout refreshLayout;
     private ListView listView;
     private EmptyView emptyView;
@@ -31,9 +31,9 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(new MyAdapter(this));
         emptyView = (EmptyView) findViewById(R.id.empty_view);
-        listView.setEmptyView(emptyView);
+        listView.setEmptyView(findViewById(R.id.empty_view));
         refreshLayout.setSwipeDirection(RefreshDirection.BOTH);
-        refreshLayout.setSwipeBothListener(this);
+        refreshLayout.setSuperRefreshListener2(this);
     }
 
     @Override
@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
     }
 
     @Override
-    public void refreshFromStart() {
+    public void refreshFromTop() {
         Toast.makeText(MainActivity.this, "头部开始刷新", Toast.LENGTH_SHORT).show();
         refreshLayout.postDelayed(new Runnable() {
             @Override
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
     }
 
     @Override
-    public void refreshFromEnd() {
+    public void refreshFromBottom() {
         Toast.makeText(MainActivity.this, "底部开始刷新", Toast.LENGTH_SHORT).show();
         refreshLayout.postDelayed(new Runnable() {
             @Override

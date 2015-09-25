@@ -7,10 +7,10 @@ package niorgai.qiu.superrefreshlayout.refresh;
 public enum RefreshDirection {
 
     //从顶部下拉刷新
-    PULL_FROM_START(0),
+    PULL_FROM_TOP(0),
 
     //从底部上拉加载
-    PULL_FROM_END(1),
+    PULL_FROM_BOTTOM(1),
 
     //两种方式均支持
     BOTH(2);
@@ -27,6 +27,6 @@ public enum RefreshDirection {
                 return direction;
             }
         }
-        return PULL_FROM_START;
+        return PULL_FROM_TOP;
     }
 }

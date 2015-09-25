@@ -33,18 +33,12 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private static final String LOG_TAG = SwipeRefreshLayout.class.getSimpleName();
 
-    //刷新的View的大小
+    //刷新的View的大小 = 30dp
     private static final int CIRCLE_DIAMETER = 30;
 
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final int INVALID_POINTER = -1;
     private static final float DRAG_RATE = .5f;
-
-    private static final int SCALE_DOWN_DURATION = 150;
-
-    private static final int ANIMATE_TO_TRIGGER_DURATION = 200;
-
-    private static final int ANIMATE_TO_START_DURATION = 200;
 
     // Default offset in dips from the top of the view to where the progress spinner should stop
     private static final int DEFAULT_CIRCLE_TARGET = 64;
@@ -63,8 +57,12 @@ public class SuperRefreshLayout extends ViewGroup {
     private float mInitialDownY;
     private boolean mIsBeingDragged;
     private int mActivePointerId = INVALID_POINTER;
-    // Whether this item is scaled up rather than clipped
+
+    // 拉动过程中是否需要对LoadingView进行scale
     private boolean mScale = true;
+
+    // 拉动过程中是否需要对LoadingView透明
+    private boolean mAlpha = true;
 
     // Target is returning to its start offset because it was cancelled or a
     // refresh was triggered.
@@ -77,9 +75,9 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private CommonLoadingView mLoadingView;
 
-    private TopLoadingView mTopLoadingView;
+    private CommonLoadingView mTopLoadingView;
 
-    private BottomLoadingView mBottomLoadingView;
+    private CommonLoadingView mBottomLoadingView;
 
     private int mTopLoadingViewIndex = -1;
 
@@ -114,16 +112,16 @@ public class SuperRefreshLayout extends ViewGroup {
                 if (mNotify) {
                     mLoadingView.startAnimation();
                     if (mBothDirection) {
-                        if (mSwipeBothListener != null) {
-                            if (mDirection == RefreshDirection.PULL_FROM_START) {
-                                mSwipeBothListener.refreshFromStart();
+                        if (mSuperRefreshListener2 != null) {
+                            if (mDirection == RefreshDirection.PULL_FROM_TOP) {
+                                mSuperRefreshListener2.refreshFromTop();
                             } else {
-                                mSwipeBothListener.refreshFromEnd();
+                                mSuperRefreshListener2.refreshFromBottom();
                             }
                         }
                     } else {
-                        if (mSwipeListener != null) {
-                            mSwipeListener.refreshFromStart();
+                        if (mSuperRefreshListener != null) {
+                            mSuperRefreshListener.refreshFromTop();
                         }
                     }
                 }
@@ -148,9 +146,9 @@ public class SuperRefreshLayout extends ViewGroup {
     private RefreshDirection mDirection;
 
     //刷新接口
-    private SwipeListener mSwipeListener;
+    private SuperRefreshListener mSuperRefreshListener;
 
-    private SwipeBothListener mSwipeBothListener;
+    private SuperRefreshListener2 mSuperRefreshListener2;
 
     /**
      * Simple constructor to use when creating a SwipeRefreshLayout from code.
@@ -185,10 +183,10 @@ public class SuperRefreshLayout extends ViewGroup {
         RefreshDirection direction
                 = RefreshDirection.getDirectionFromValue(a.getInt(R.styleable.SuperRefreshLayout_direction, 0));
         if (direction == RefreshDirection.BOTH) {
-            mDirection = RefreshDirection.PULL_FROM_START;
+            mDirection = RefreshDirection.PULL_FROM_TOP;
             mBothDirection = true;
         } else {
-            mDirection = RefreshDirection.PULL_FROM_START;
+            mDirection = RefreshDirection.PULL_FROM_TOP;
             mBothDirection = false;
         }
         a.recycle();
@@ -246,10 +244,10 @@ public class SuperRefreshLayout extends ViewGroup {
             mRefreshing = refreshing;
             int endTarget = 0;
             switch (mDirection) {
-                case PULL_FROM_END:
+                case PULL_FROM_BOTTOM:
                     endTarget = getMeasuredHeight() - (int) (mSpinnerFinalOffset);
                     break;
-                case PULL_FROM_START:
+                case PULL_FROM_TOP:
                 default:
                     endTarget = (int) (mSpinnerFinalOffset - Math.abs(mOriginalOffsetTop));
                     break;
@@ -275,7 +273,9 @@ public class SuperRefreshLayout extends ViewGroup {
         ViewCompat.setScaleX(mLoadingView, progress);
         ViewCompat.setScaleY(mLoadingView, progress);
         mLoadingView.setProgress(progress);
-        mLoadingView.setViewAlpha(progress);
+        if (mAlpha) {
+            mLoadingView.setViewAlpha(progress);
+        }
     }
 
     private void setRefreshing(boolean refreshing, final boolean notify) {
@@ -319,7 +319,8 @@ public class SuperRefreshLayout extends ViewGroup {
 //                setAnimationProgress(1 - interpolatedTime);
 //            }
 //        };
-//        mScaleDownAnimation.setDuration(SCALE_DOWN_DURATION);
+//        //动画时间150ms
+//        mScaleDownAnimation.setDuration(150);
 //        mLoadingView.setAnimationListener(listener);
 //        mLoadingView.clearAnimation();
 //        mLoadingView.startAnimation(mScaleDownAnimation);
@@ -408,11 +409,11 @@ public class SuperRefreshLayout extends ViewGroup {
         if (!mOriginalOffsetCalculated) {
             mOriginalOffsetCalculated = true;
             switch (mDirection) {
-                case PULL_FROM_END:
+                case PULL_FROM_BOTTOM:
                     mLoadingView = mBottomLoadingView;
                     mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                     break;
-                case PULL_FROM_START:
+                case PULL_FROM_TOP:
                 default:
                     mLoadingView = mTopLoadingView;
                     mCurrentTargetOffsetTop = mOriginalOffsetTop = -mLoadingView.getMeasuredHeight();
@@ -462,14 +463,14 @@ public class SuperRefreshLayout extends ViewGroup {
         }
 
         switch (mDirection) {
-            case PULL_FROM_END:
+            case PULL_FROM_BOTTOM:
                 mLoadingView = mBottomLoadingView;
                 if (!isEnabled() || mReturningToStart || (!mBothDirection && canChildScrollDown()) || mRefreshing) {
                     // Fail fast if we're not in a state where a swipe is possible
                     return false;
                 }
                 break;
-            case PULL_FROM_START:
+            case PULL_FROM_TOP:
             default:
                 mLoadingView = mTopLoadingView;
                 if (!isEnabled() || mReturningToStart || (!mBothDirection && canChildScrollUp()) || mRefreshing) {
@@ -503,32 +504,32 @@ public class SuperRefreshLayout extends ViewGroup {
                 }
                 if (mBothDirection) {
                     if (y > mInitialDownY) {
-                        setCurrentSwipeDirection(RefreshDirection.PULL_FROM_START);
+                        setCurrentSwipeDirection(RefreshDirection.PULL_FROM_TOP);
                     } else if (y < mInitialDownY) {
-                        setCurrentSwipeDirection(RefreshDirection.PULL_FROM_END);
+                        setCurrentSwipeDirection(RefreshDirection.PULL_FROM_BOTTOM);
                     }
-                    if ((mDirection == RefreshDirection.PULL_FROM_END && canChildScrollDown())
-                            || (mDirection == RefreshDirection.PULL_FROM_START && canChildScrollUp())) {
+                    if ((mDirection == RefreshDirection.PULL_FROM_BOTTOM && canChildScrollDown())
+                            || (mDirection == RefreshDirection.PULL_FROM_TOP && canChildScrollUp())) {
                         mInitialDownY = y;
                         return false;
                     }
                 }
                 float yDiff;
                 switch (mDirection) {
-                    case PULL_FROM_END:
+                    case PULL_FROM_BOTTOM:
                         yDiff = mInitialDownY - y;
                         break;
-                    case PULL_FROM_START:
+                    case PULL_FROM_TOP:
                     default:
                         yDiff = y - mInitialDownY;
                         break;
                 }
                 if (yDiff > mTouchSlop && !mIsBeingDragged) {
                     switch (mDirection) {
-                        case PULL_FROM_END:
+                        case PULL_FROM_BOTTOM:
                             mInitialMotionY = mInitialDownY - mTouchSlop;
                             break;
-                        case PULL_FROM_START:
+                        case PULL_FROM_TOP:
                         default:
                             mInitialMotionY = mInitialDownY + mTouchSlop;
                             break;
@@ -577,13 +578,13 @@ public class SuperRefreshLayout extends ViewGroup {
         }
 
         switch (mDirection) {
-            case PULL_FROM_END:
+            case PULL_FROM_BOTTOM:
                 if (!isEnabled() || mReturningToStart || canChildScrollDown() || mRefreshing) {
                     // Fail fast if we're not in a state where a swipe is possible
                     return false;
                 }
                 break;
-            case PULL_FROM_START:
+            case PULL_FROM_TOP:
             default:
                 if (!isEnabled() || mReturningToStart || canChildScrollUp() || mRefreshing) {
                     // Fail fast if we're not in a state where a swipe is possible
@@ -608,10 +609,10 @@ public class SuperRefreshLayout extends ViewGroup {
                 final float y = MotionEventCompat.getY(ev, pointerIndex);
                 float overScrollTop;
                 switch (mDirection) {
-                    case PULL_FROM_END:
+                    case PULL_FROM_BOTTOM:
                         overScrollTop = (mInitialMotionY - y) * DRAG_RATE;
                         break;
-                    case PULL_FROM_START:
+                    case PULL_FROM_TOP:
                     default:
                         overScrollTop = (y - mInitialMotionY) * DRAG_RATE;
                         break;
@@ -633,10 +634,10 @@ public class SuperRefreshLayout extends ViewGroup {
 
                     int targetY;
                     switch (mDirection) {
-                        case PULL_FROM_END:
+                        case PULL_FROM_BOTTOM:
                             targetY = mOriginalOffsetTop - (int) ((slingshotDist * dragPercent) + extraMove);
                             break;
-                        case PULL_FROM_START:
+                        case PULL_FROM_TOP:
                         default:
                             targetY = mOriginalOffsetTop + (int) ((slingshotDist * dragPercent) + extraMove);
                             break;
@@ -681,10 +682,10 @@ public class SuperRefreshLayout extends ViewGroup {
                 final float y = MotionEventCompat.getY(ev, pointerIndex);
                 float overScrollTop;
                 switch (mDirection) {
-                    case PULL_FROM_END:
+                    case PULL_FROM_BOTTOM:
                         overScrollTop = (mInitialMotionY - y) * DRAG_RATE;
                         break;
-                    case PULL_FROM_START:
+                    case PULL_FROM_TOP:
                     default:
                         overScrollTop = (y - mInitialMotionY) * DRAG_RATE;
                         break;
@@ -726,10 +727,14 @@ public class SuperRefreshLayout extends ViewGroup {
         return true;
     }
 
+    /**
+     * 从当前位置滑动至Loading的位置
+     */
     private void animateOffsetToCorrectPosition(int from, Animation.AnimationListener listener) {
         mFrom = from;
         mAnimateToCorrectPosition.reset();
-        mAnimateToCorrectPosition.setDuration(ANIMATE_TO_TRIGGER_DURATION);
+        //动画时间200ms
+        mAnimateToCorrectPosition.setDuration(200);
         mAnimateToCorrectPosition.setInterpolator(mDecelerateInterpolator);
         if (listener != null) {
             mLoadingView.setAnimationListener(listener);
@@ -738,33 +743,16 @@ public class SuperRefreshLayout extends ViewGroup {
         mLoadingView.startAnimation(mAnimateToCorrectPosition);
     }
 
-    private void animateOffsetToStartPosition(int from, Animation.AnimationListener listener) {
-        if (mScale) {
-            // Scale the item back down
-            startScaleDownReturnToStartAnimation(from, listener);
-        } else {
-            mFrom = from;
-            mAnimateToStartPosition.reset();
-            mAnimateToStartPosition.setDuration(ANIMATE_TO_START_DURATION);
-            mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
-            if (listener != null) {
-                mLoadingView.setAnimationListener(listener);
-            }
-            mLoadingView.clearAnimation();
-            mLoadingView.startAnimation(mAnimateToStartPosition);
-        }
-    }
-
     private final Animation mAnimateToCorrectPosition = new Animation() {
         @Override
         public void applyTransformation(float interpolatedTime, Transformation t) {
             int targetTop;
             int endTarget;
             switch (mDirection) {
-                case PULL_FROM_END:
+                case PULL_FROM_BOTTOM:
                     endTarget = getMeasuredHeight() - (int) (mSpinnerFinalOffset);
                     break;
-                case PULL_FROM_START:
+                case PULL_FROM_TOP:
                 default:
                     endTarget = (int) (mSpinnerFinalOffset - Math.abs(mOriginalOffsetTop));
                     break;
@@ -774,6 +762,27 @@ public class SuperRefreshLayout extends ViewGroup {
             setTargetOffsetTopAndBottom(offset);
         }
     };
+
+    /**
+     * 动画滑动到开始的位置
+     */
+    private void animateOffsetToStartPosition(int from, Animation.AnimationListener listener) {
+        if (mScale) {
+            // Scale the item back down
+            startScaleDownReturnToStartAnimation(from, listener);
+        } else {
+            mFrom = from;
+            mAnimateToStartPosition.reset();
+            //动画时间200ms
+            mAnimateToStartPosition.setDuration(200);
+            mAnimateToStartPosition.setInterpolator(mDecelerateInterpolator);
+            if (listener != null) {
+                mLoadingView.setAnimationListener(listener);
+            }
+            mLoadingView.clearAnimation();
+            mLoadingView.startAnimation(mAnimateToStartPosition);
+        }
+    }
 
     private void moveToStart(float interpolatedTime) {
         int targetTop = (mFrom + (int) ((mOriginalOffsetTop - mFrom) * interpolatedTime));
@@ -802,7 +811,8 @@ public class SuperRefreshLayout extends ViewGroup {
                 moveToStart(interpolatedTime);
             }
         };
-        mScaleDownToStartAnimation.setDuration(SCALE_DOWN_DURATION);
+        //动画时间150ms
+        mScaleDownToStartAnimation.setDuration(150);
         if (listener != null) {
             mLoadingView.setAnimationListener(listener);
         }
@@ -843,11 +853,11 @@ public class SuperRefreshLayout extends ViewGroup {
         }
 
         switch (direction) {
-            case PULL_FROM_END:
+            case PULL_FROM_BOTTOM:
                 mLoadingView = mBottomLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                 break;
-            case PULL_FROM_START:
+            case PULL_FROM_TOP:
             default:
                 mLoadingView = mTopLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = -mLoadingView.getMeasuredHeight();
@@ -865,11 +875,11 @@ public class SuperRefreshLayout extends ViewGroup {
         }
         mDirection = direction;
         switch (mDirection) {
-            case PULL_FROM_END:
+            case PULL_FROM_BOTTOM:
                 mLoadingView = mBottomLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                 break;
-            case PULL_FROM_START:
+            case PULL_FROM_TOP:
             default:
                 mLoadingView = mTopLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = -mLoadingView.getMeasuredHeight();
@@ -911,38 +921,67 @@ public class SuperRefreshLayout extends ViewGroup {
     }
 
     /**
-     * PULL_FROM_START or PULL_FROM_END
+     * 设置是否裁剪
      */
-    public interface SwipeListener {
+    public void setScale(boolean scale) {
+        this.mScale = scale;
+    }
 
-        public void refreshFromStart();
+    /**
+     * 设置是否透明
+     */
+    public void setmAlpha(boolean alpha) {
+        this.mAlpha = alpha;
+    }
+
+    /**
+     * PULL_FROM_TOP or PULL_FROM_BOTTOM
+     */
+    public interface SuperRefreshListener {
+
+        public void refreshFromTop();
 
     }
 
     /**
      * BOTH
      */
-    public interface SwipeBothListener {
+    public interface SuperRefreshListener2 {
 
-        public void refreshFromStart();
+        public void refreshFromTop();
 
-        public void refreshFromEnd();
+        public void refreshFromBottom();
 
     }
 
     /**
      * 设置双向刷新的Listener
-     * @param mSwipeBothListener
+     * @param mSuperRefreshListener2
      */
-    public void setSwipeBothListener(SwipeBothListener mSwipeBothListener) {
-        this.mSwipeBothListener = mSwipeBothListener;
+    public void setSuperRefreshListener2(SuperRefreshListener2 mSuperRefreshListener2) {
+        this.mSuperRefreshListener2 = mSuperRefreshListener2;
     }
 
     /**
-     * Set the listener to be notified when a refresh is triggered via the swipe
-     * gesture.
+     * 单一方向刷新时的listener
      */
-    public void setOnRefreshListener(SwipeListener listener) {
-        mSwipeListener = listener;
+    public void setSuperRefreshListener(SuperRefreshListener listener) {
+        mSuperRefreshListener = listener;
+    }
+
+    /**
+     * 设置顶部刷新的LoadingView
+     * @param mTopLoadingView
+     */
+    public void setTopLoadingView(CommonLoadingView mTopLoadingView) {
+        this.mTopLoadingView = mTopLoadingView;
+    }
+
+    /**
+     * 设置底部刷新的LoadingView
+     * @param mBottomLoadingView
+     */
+    public void setBottomLoadingView(CommonLoadingView mBottomLoadingView) {
+        this.mBottomLoadingView = mBottomLoadingView;
     }
 }

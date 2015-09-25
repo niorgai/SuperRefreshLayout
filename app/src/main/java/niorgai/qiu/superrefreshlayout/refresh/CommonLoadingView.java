@@ -23,15 +23,19 @@ public abstract class CommonLoadingView extends FrameLayout{
         mListener = listener;
     }
 
+    //根据不同的下拉Progress设置其变化
     public void setProgress(float pre) {
     }
 
+    //开始Loading动作时的动画
     public void startAnimation(){
     }
 
+    //Loading结束时取消动画
     public void stopAnimation(){
     }
 
+    //根据不同的下拉Progress设置alpha值
     public void setViewAlpha(float alpha){
     }
 
