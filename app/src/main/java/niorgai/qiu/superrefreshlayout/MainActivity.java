@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
     }
 
     @Override
-    public void refreshFromTop() {
+    public void onRefreshFromTop() {
         Toast.makeText(MainActivity.this, "头部开始刷新", Toast.LENGTH_SHORT).show();
         refreshLayout.postDelayed(new Runnable() {
             @Override
@@ -71,7 +71,7 @@ public class MainActivity extends AppCompatActivity implements SuperRefreshLayou
     }
 
     @Override
-    public void refreshFromBottom() {
+    public void onRefreshFromBottom() {
         Toast.makeText(MainActivity.this, "底部开始刷新", Toast.LENGTH_SHORT).show();
         refreshLayout.postDelayed(new Runnable() {
             @Override

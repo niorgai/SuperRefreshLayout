@@ -114,14 +114,20 @@ public class SuperRefreshLayout extends ViewGroup {
                     if (mBothDirection) {
                         if (mSuperRefreshListener2 != null) {
                             if (mDirection == RefreshDirection.PULL_FROM_TOP) {
-                                mSuperRefreshListener2.refreshFromTop();
+                                mSuperRefreshListener2.onRefreshFromTop();
                             } else {
-                                mSuperRefreshListener2.refreshFromBottom();
+                                mSuperRefreshListener2.onRefreshFromBottom();
                             }
                         }
                     } else {
                         if (mSuperRefreshListener != null) {
-                            mSuperRefreshListener.refreshFromTop();
+                            mSuperRefreshListener.onRefreshFromTop();
+                        } else if (mSuperRefreshListener2 != null) {
+                            if (mDirection == RefreshDirection.PULL_FROM_TOP) {
+                                mSuperRefreshListener2.onRefreshFromTop();
+                            } else {
+                                mSuperRefreshListener2.onRefreshFromBottom();
+                            }
                         }
                     }
                 }
@@ -939,7 +945,7 @@ public class SuperRefreshLayout extends ViewGroup {
      */
     public interface SuperRefreshListener {
 
-        public void refreshFromTop();
+        public void onRefreshFromTop();
 
     }
 
@@ -948,9 +954,9 @@ public class SuperRefreshLayout extends ViewGroup {
      */
     public interface SuperRefreshListener2 {
 
-        public void refreshFromTop();
+        public void onRefreshFromTop();
 
-        public void refreshFromBottom();
+        public void onRefreshFromBottom();
 
     }
 
