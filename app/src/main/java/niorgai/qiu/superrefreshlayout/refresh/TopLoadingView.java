@@ -2,6 +2,10 @@ package niorgai.qiu.superrefreshlayout.refresh;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageView;
 
 import niorgai.qiu.superrefreshlayout.R;
 
@@ -9,9 +13,11 @@ import niorgai.qiu.superrefreshlayout.R;
 /**
  * Created by qiu on 9/3/15.
  */
-public class TopLoadingView extends CommonLoadingView{
+public class TopLoadingView extends CommonLoadingView {
 
-    private RefreshProgress progress;
+    private RotateAnimation rotateAnimation;
+
+    private ImageView loadingImageView;
 
     public TopLoadingView(Context context) {
         this(context, null);
@@ -20,23 +26,29 @@ public class TopLoadingView extends CommonLoadingView{
     public TopLoadingView(Context context, AttributeSet attrs) {
         super(context, attrs);
         inflate(context, R.layout.top_refresh_layout, this);
-        progress = (RefreshProgress) findViewById(R.id.progress);
+        loadingImageView = (ImageView) findViewById(R.id.progress);
+
+        rotateAnimation = new RotateAnimation(0, 1080, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        rotateAnimation.setRepeatCount(-1);
+        rotateAnimation.setInterpolator(new LinearInterpolator());
+        rotateAnimation.setDuration(3000);
+        rotateAnimation.setFillAfter(true);
     }
 
     public void setProgress(float pre) {
-        progress.rotateView(pre);
+        loadingImageView.setRotation(pre * 360);
     }
 
     public void setViewAlpha(float alpha) {
-        progress.setAlpha(alpha);
+        loadingImageView.setAlpha(alpha);
     }
 
     public void startAnimation(){
-        progress.startAnimation();
+        loadingImageView.startAnimation(rotateAnimation);
     }
 
     public void stopAnimation(){
-        progress.stopAnimation();
+        rotateAnimation.cancel();
     }
 
 }
