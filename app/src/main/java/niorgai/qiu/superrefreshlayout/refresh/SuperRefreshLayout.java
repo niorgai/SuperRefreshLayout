@@ -33,8 +33,8 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private static final String LOG_TAG = SwipeRefreshLayout.class.getSimpleName();
 
-    //刷新的View的大小 = 30dp
-    private static final int CIRCLE_DIAMETER = 30;
+    //刷新的View的大小 = 25dp
+    private static final int CIRCLE_DIAMETER = 25;
 
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final int INVALID_POINTER = -1;
@@ -108,9 +108,9 @@ public class SuperRefreshLayout extends ViewGroup {
         @Override
         public void onAnimationEnd(Animation animation) {
             if (mRefreshing) {
+                mLoadingView.startAnimation();
                 // Make sure the progress view is fully visible
                 if (mNotify) {
-                    mLoadingView.startAnimation();
                     if (mBothDirection) {
                         if (mSuperRefreshListener2 != null) {
                             if (mDirection == RefreshDirection.PULL_FROM_TOP) {
@@ -244,23 +244,28 @@ public class SuperRefreshLayout extends ViewGroup {
      *
      * @param refreshing Whether or not the view should show refresh progress.
      */
-    public void setRefreshing(boolean refreshing) {
+    public void setRefreshing(final boolean refreshing) {
         if (refreshing && mRefreshing != refreshing) {
-            // scale and show
-            mRefreshing = refreshing;
-            int endTarget = 0;
-            switch (mDirection) {
-                case PULL_FROM_BOTTOM:
-                    endTarget = getMeasuredHeight() - (int) (mSpinnerFinalOffset);
-                    break;
-                case PULL_FROM_TOP:
-                default:
-                    endTarget = (int) (mSpinnerFinalOffset - Math.abs(mOriginalOffsetTop));
-                    break;
-            }
-            setTargetOffsetTopAndBottom(endTarget - mCurrentTargetOffsetTop);
-            mNotify = false;
-            startScaleUpAnimation(mRefreshListener);
+            post(new Runnable() {
+                @Override
+                public void run() {
+                    // scale and show
+                    mRefreshing = refreshing;
+                    int endTarget = 0;
+                    switch (mDirection) {
+                        case PULL_FROM_BOTTOM:
+                            endTarget = getMeasuredHeight() - (int) (mSpinnerFinalOffset);
+                            break;
+                        case PULL_FROM_TOP:
+                        default:
+                            endTarget = (int) (mSpinnerFinalOffset - Math.abs(mOriginalOffsetTop));
+                            break;
+                    }
+                    setTargetOffsetTopAndBottom(endTarget - mCurrentTargetOffsetTop);
+                    mNotify = false;
+                    startScaleUpAnimation(mRefreshListener);
+                }
+            });
         } else {
             setRefreshing(refreshing, false /* notify */);
         }

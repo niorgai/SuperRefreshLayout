@@ -31,7 +31,7 @@ public class TopLoadingView extends CommonLoadingView {
         rotateAnimation = new RotateAnimation(0, 1080, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         rotateAnimation.setRepeatCount(-1);
         rotateAnimation.setInterpolator(new LinearInterpolator());
-        rotateAnimation.setDuration(3000);
+        rotateAnimation.setDuration(2000);
         rotateAnimation.setFillAfter(true);
     }
 
