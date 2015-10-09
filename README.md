@@ -1,5 +1,5 @@
 # SuperRefreshLayout
-支持上拉、下拉的Layout
+支持上拉、下拉的Layout, SDK >= 14.
 
 由SwipeRefreshLayout的源码更改而来
 主要支持以下特性:
@@ -8,6 +8,7 @@
 2. 自定义LoadingView
 4. LoadingView可以透明变化
 5. 支持`AbsListView.setEmptyView()`方法
+6. Activity的onStart方法中调用setRefreshing(true)方法.
 
 # Example
 1. 设置不同的加载模式:

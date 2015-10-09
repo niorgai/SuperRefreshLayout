@@ -25,8 +25,9 @@ public class TopLoadingView extends CommonLoadingView {
 
     public TopLoadingView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        inflate(context, R.layout.top_refresh_layout, this);
-        loadingImageView = (ImageView) findViewById(R.id.progress);
+        loadingImageView = new ImageView(context);
+        loadingImageView.setImageResource(R.drawable.loading_rotate);
+        addView(loadingImageView);
 
         rotateAnimation = new RotateAnimation(0, 1080, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
         rotateAnimation.setRepeatCount(-1);
