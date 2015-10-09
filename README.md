@@ -9,6 +9,7 @@
 4. LoadingView可以透明变化
 5. 支持`AbsListView.setEmptyView()`方法
 6. Activity的onStart方法中调用setRefreshing(true)方法.
+7. 支持设置子View跟随手指滑动
 
 # Example
 1. 设置不同的加载模式:
@@ -90,3 +91,13 @@
 		</niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout>
 		
 	项目中我重写了EmptyView的`onTouchEvent`方法,一直返回true.如果不想重写也可以在EmptyView外面包一层ScrollView.同时设置ScrollView的属性`android:fillViewport="true"`即可.
+	
+5. `SwipeRefreshLayout`是侵入式的设计,即子View不会跟随LoadingView滑动,现在增加方法
+
+		//设置target是否跟随顶部LoadingView滑动,默认为false
+		public void setTargetScrollWithTop(boolean mTargetScrollWithTop)
+		
+		//设置target是否跟随底部LoadingView滑动,默认为true
+		public void setTargetScrollWithBottom(boolean mTargetScrollWithBottom)
+		
+	可以实现非侵入式的加载效果.
