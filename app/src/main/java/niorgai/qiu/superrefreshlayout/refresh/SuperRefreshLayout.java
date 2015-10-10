@@ -208,6 +208,7 @@ public class SuperRefreshLayout extends ViewGroup {
 
         createTopLoadingView();
         createBottomLoadingView();
+        mLoadingView = mTopLoadingView;
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
         // the absolute offset has to take into account that the circle starts at an offset
         mSpinnerFinalOffset = DEFAULT_CIRCLE_TARGET * metrics.density;
@@ -250,10 +251,10 @@ public class SuperRefreshLayout extends ViewGroup {
      * @param refreshing Whether or not the view should show refresh progress.
      */
     public void setRefreshing(final boolean refreshing) {
-        if (refreshing && mRefreshing != refreshing) {
-            post(new Runnable() {
-                @Override
-                public void run() {
+        post(new Runnable() {
+            @Override
+            public void run() {
+                if (refreshing && mRefreshing != refreshing) {
                     // scale and show
                     mRefreshing = refreshing;
                     int endTarget = 0;
@@ -269,11 +270,11 @@ public class SuperRefreshLayout extends ViewGroup {
                     setTargetOffsetTopAndBottom(endTarget - mCurrentTargetOffsetTop);
                     mNotify = false;
                     startScaleUpAnimation(mRefreshListener);
+                } else {
+                    setRefreshing(refreshing, false /* notify */);
                 }
-            });
-        } else {
-            setRefreshing(refreshing, false /* notify */);
-        }
+            }
+        });
     }
 
     /**
@@ -864,7 +865,12 @@ public class SuperRefreshLayout extends ViewGroup {
         switch (direction) {
             case PULL_FROM_BOTTOM:
                 mLoadingView = mBottomLoadingView;
-                mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
+                    }
+                });
                 break;
             case PULL_FROM_TOP:
             default:
