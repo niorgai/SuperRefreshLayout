@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.v4.view.MotionEventCompat;
 import android.support.v4.view.ViewCompat;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
@@ -32,7 +31,7 @@ public class SuperRefreshLayout extends ViewGroup {
     //开始刷新的距离,距离顶部120dp
     private static final int REFRESH_TRIGGER_DISTANCE = 120;
 
-    private static final String LOG_TAG = SwipeRefreshLayout.class.getSimpleName();
+    private static final String LOG_TAG = SuperRefreshLayout.class.getSimpleName();
 
     //刷新的View的大小 = 25dp
     private static final int CIRCLE_DIAMETER = 25;
@@ -54,6 +53,7 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private float mInitialMotionY;
     private float mInitialDownY;
+    //是否被手指拉动(在onInterceptTouchEvent中拦截时置为true)
     private boolean mIsBeingDragged;
     private int mActivePointerId = INVALID_POINTER;
 
@@ -173,6 +173,9 @@ public class SuperRefreshLayout extends ViewGroup {
 
     //保存强制显示LoadingView之前的RefreshDirection
     private RefreshDirection tempDirection = null;
+
+    //是否是同一点击事件序列中第一个拦截后应该处理的move事件
+    private boolean isFirstMoveAfterIntercept = false;
 
     /**
      * Simple constructor to use when creating a SwipeRefreshLayout from code.
@@ -478,6 +481,17 @@ public class SuperRefreshLayout extends ViewGroup {
     }
 
     @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            isFirstMoveAfterIntercept = true;
+        }
+        if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+            isFirstMoveAfterIntercept = false;
+        }
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         ensureTarget();
 
@@ -605,6 +619,10 @@ public class SuperRefreshLayout extends ViewGroup {
         switch (mDirection) {
             case PULL_FROM_BOTTOM:
                 if (!isEnabled() || mReturningToStart || canChildScrollDown() || mRefreshing) {
+                    //如果之前被拦截,将此事件传递到子View
+                    if (mIsBeingDragged) {
+                        mTarget.dispatchTouchEvent(ev);
+                    }
                     // Fail fast if we're not in a state where a swipe is possible
                     return false;
                 }
@@ -612,6 +630,10 @@ public class SuperRefreshLayout extends ViewGroup {
             case PULL_FROM_TOP:
             default:
                 if (!isEnabled() || mReturningToStart || canChildScrollUp() || mRefreshing) {
+                    //如果之前被拦截,将此事件传递到子View
+                    if (mIsBeingDragged) {
+                        mTarget.dispatchTouchEvent(ev);
+                    }
                     // Fail fast if we're not in a state where a swipe is possible
                     return false;
                 }
@@ -645,6 +667,16 @@ public class SuperRefreshLayout extends ViewGroup {
                 if (mIsBeingDragged) {
                     float originalDragPercent = overScrollTop / mTotalDragDistance;
                     if (originalDragPercent < 0) {
+                        if (isFirstMoveAfterIntercept) {
+                            // 如果是被拦截过(mIsBeingDragged) 并且是第一个move事件(isFirstMoveAfterIntercept)
+                            // 先为子View模拟一个Action_Down事件
+                            MotionEvent event = MotionEvent.obtain(ev);
+                            event.setAction(MotionEvent.ACTION_DOWN);
+                            mTarget.dispatchTouchEvent(event);
+                            isFirstMoveAfterIntercept = false;
+                        }
+                        //将Move事件传递到子View
+                        mTarget.dispatchTouchEvent(ev);
                         return false;
                     }
                     float dragPercent = Math.min(1f, Math.abs(originalDragPercent));
@@ -880,6 +912,14 @@ public class SuperRefreshLayout extends ViewGroup {
             case PULL_FROM_BOTTOM:
                 mLoadingView = mBottomLoadingView;
                 mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
+                if (mCurrentTargetOffsetTop == 0) {
+                    post(new Runnable() {
+                        @Override
+                        public void run() {
+                            setSwipeDirection(mDirection);
+                        }
+                    });
+                }
                 break;
             case PULL_FROM_TOP:
             default:
