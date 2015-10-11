@@ -88,6 +88,9 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private float mSpinnerFinalOffset;
 
+    /**
+     * 是否是滑动触发的通知,滑动时mNotify为true,不滑动(代码调用setRefresh())时为false
+     */
     private boolean mNotify;
 
     private int mLoadingViewWidth;
@@ -130,6 +133,7 @@ public class SuperRefreshLayout extends ViewGroup {
                         }
                     }
                 }
+                mCurrentTargetOffsetTop = mLoadingView.getTop();
             } else {
                 mLoadingView.setVisibility(View.GONE);
                 // Return the circle to its start position
@@ -138,8 +142,11 @@ public class SuperRefreshLayout extends ViewGroup {
                 } else {
                     setTargetOffsetTopAndBottom(mOriginalOffsetTop - mCurrentTargetOffsetTop);
                 }
+                mCurrentTargetOffsetTop = mLoadingView.getTop();
+                if (isForceShowLoadingView) {
+                    restoreRefreshDirection();
+                }
             }
-            mCurrentTargetOffsetTop = mLoadingView.getTop();
         }
     };
 
@@ -160,6 +167,12 @@ public class SuperRefreshLayout extends ViewGroup {
 
     //target是否跟随底部LoadingView滑动
     private boolean mTargetScrollWithBottom = true;
+
+    //是否强制显示LoadingView
+    private boolean isForceShowLoadingView = false;
+
+    //保存强制显示LoadingView之前的RefreshDirection
+    private RefreshDirection tempDirection = null;
 
     /**
      * Simple constructor to use when creating a SwipeRefreshLayout from code.
@@ -255,7 +268,7 @@ public class SuperRefreshLayout extends ViewGroup {
             @Override
             public void run() {
                 if (refreshing && mRefreshing != refreshing) {
-                    // scale and show
+                    // 开始显示LoadingView
                     mRefreshing = refreshing;
                     int endTarget = 0;
                     switch (mDirection) {
@@ -271,10 +284,25 @@ public class SuperRefreshLayout extends ViewGroup {
                     mNotify = false;
                     startScaleUpAnimation(mRefreshListener);
                 } else {
+                    //隐藏LoadingView
                     setRefreshing(refreshing, false /* notify */);
                 }
             }
         });
+    }
+
+    private void setRefreshing(boolean refreshing, final boolean notify) {
+        if (mRefreshing != refreshing) {
+            mNotify = notify;
+            ensureTarget();
+            mRefreshing = refreshing;
+            if (mRefreshing) {
+                animateOffsetToCorrectPosition(mCurrentTargetOffsetTop, mRefreshListener);
+            } else {
+                startScaleDownAnimation(mRefreshListener);
+                mLoadingView.stopAnimation();
+            }
+        }
     }
 
     /**
@@ -298,20 +326,6 @@ public class SuperRefreshLayout extends ViewGroup {
     private void setAnimationProgress(float progress) {
         ViewCompat.setScaleX(mLoadingView, progress);
         ViewCompat.setScaleY(mLoadingView, progress);
-    }
-
-    private void setRefreshing(boolean refreshing, final boolean notify) {
-        if (mRefreshing != refreshing) {
-            mNotify = notify;
-            ensureTarget();
-            mRefreshing = refreshing;
-            if (mRefreshing) {
-                animateOffsetToCorrectPosition(mCurrentTargetOffsetTop, mRefreshListener);
-            } else {
-                startScaleDownAnimation(mRefreshListener);
-                mLoadingView.stopAnimation();
-            }
-        }
     }
 
     //开始逐渐放大的动画
@@ -865,12 +879,7 @@ public class SuperRefreshLayout extends ViewGroup {
         switch (direction) {
             case PULL_FROM_BOTTOM:
                 mLoadingView = mBottomLoadingView;
-                post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
-                    }
-                });
+                mCurrentTargetOffsetTop = mOriginalOffsetTop = getMeasuredHeight();
                 break;
             case PULL_FROM_TOP:
             default:
@@ -938,14 +947,14 @@ public class SuperRefreshLayout extends ViewGroup {
     /**
      * 设置是否裁剪
      */
-    public void setScale(boolean scale) {
+    public void setLoadingViewScale(boolean scale) {
         this.mScale = scale;
     }
 
     /**
      * 设置是否透明
      */
-    public void setmAlpha(boolean alpha) {
+    public void setLoadingViewAlpha(boolean alpha) {
         this.mAlpha = alpha;
     }
 
@@ -1014,5 +1023,27 @@ public class SuperRefreshLayout extends ViewGroup {
      */
     public void setTargetScrollWithBottom(boolean mTargetScrollWithBottom) {
         this.mTargetScrollWithBottom = mTargetScrollWithBottom;
+    }
+
+    /**
+     * 设置顶部LoadingView出现
+     */
+    public void setTopForceRefresh() {
+        isForceShowLoadingView = true;
+        tempDirection = mDirection;
+        setCurrentSwipeDirection(RefreshDirection.PULL_FROM_TOP);
+        setRefreshing(true);
+    }
+
+    /**
+     * 恢复原来的刷新方向
+     */
+    private void restoreRefreshDirection() {
+        if (!isForceShowLoadingView) {
+            return;
+        }
+        isForceShowLoadingView = false;
+        setCurrentSwipeDirection(tempDirection);
+        tempDirection = null;
     }
 }

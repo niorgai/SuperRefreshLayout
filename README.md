@@ -6,10 +6,11 @@
 
 1. 支持上拉加载
 2. 自定义LoadingView
-4. LoadingView可以透明变化
+4. LoadingView可以根据拉动的百分比(拉伸\透明)变化.
 5. 支持`AbsListView.setEmptyView()`方法
-6. Activity的onStart方法中调用setRefreshing(true)方法.
-7. 支持设置子View跟随手指滑动
+6. 支持设置子View跟随手指滑动(非侵入式)
+7. 支持强制显示头部LoadingView.
+8. Activity的onStart方法中调用setRefreshing(true)方法.
 
 # Example
 1. 设置不同的加载模式:
@@ -61,13 +62,14 @@
 	    public void setViewAlpha(float alpha){
 	    }
 	    
-3. LoadingView可以透明变化,默认为true
+3. LoadingView可以根据拉动的百分比(拉伸\透明)变化.
 
-		refreshLayout.setmAlpha(boolean alpha);
+		refreshLayout.setLoadingViewScale(boolean scale);
+		refreshLayout.setLoadingViewAlpha(boolean alpha);
 		
 4. 支持`AbsListView.setEmptyView()`方法
 
-	`SwipeRefreshLayout`中使用ListView的话,setEmptyView方法很难同步,这里采用的解决办法为:
+	`SwipeRefreshLayout`中使用ListView的话,setEmptyView的方法无法实现,这里采用的解决办法为:
 	
 		<niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout
 			xmlns:android="http://schemas.android.com/apk/res/android"
@@ -101,3 +103,12 @@
 		public void setTargetScrollWithBottom(boolean mTargetScrollWithBottom)
 		
 	可以实现非侵入式的加载效果.
+	
+6. 如果一个Activity只能从底部上拉加载更多,当进入该Activity时,第一次加载数据的操作其实是从顶部下拉刷新,一般处理方法为显示一个Loading遮罩层.但我希望可以在进入时显示顶部的LoadingView,这样可以更加直观.
+
+		refreshLayout.setSwipeDirection(RefreshDirection.PULL_FROM_BOTTOM);
+		//强制显示顶部LoadingView
+		refreshLayout.setTopForceRefresh();
+		...
+		//同样在刷新结束后调用
+		refreshLayout.setRefreshing(false);
