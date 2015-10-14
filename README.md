@@ -11,8 +11,8 @@
 6. 支持设置子View跟随手指滑动(非侵入式)
 7. 支持强制显示头部LoadingView.
 8. Activity的onStart方法中调用setRefreshing(true)方法.
-9. onTouchEvent在滑动过程中联动子View,详情可以查看[滑动冲突解决-更顺滑的RefreshLayout](http://niorgai.github.io/2015/10/12/%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3-%E6%9B%B4%E9%A1%BA%E6%BB%91%E7%9A%84RefreshLayout/).
-10. 兼容ViewPager.
+9. onTouchEvent在滑动过程中联动子View,详情可以查看[滑动冲突解决-联动子View](http://niorgai.github.io/2015/10/12/%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3-%E8%81%94%E5%8A%A8%E5%AD%90View/).
+10. 兼容ViewPager,解决方案可以查看[滑动冲突解决-更合理的拦截](http://niorgai.github.io/2015/10/15/%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3-%E6%9B%B4%E5%90%88%E7%90%86%E7%9A%84%E6%8B%A6%E6%88%AA/).
 
 # Example
 1. 设置不同的加载模式:

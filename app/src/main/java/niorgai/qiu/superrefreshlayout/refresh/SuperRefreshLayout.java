@@ -322,9 +322,11 @@ public class SuperRefreshLayout extends ViewGroup {
 
     /**
      * 根据touch距离设置进度(0-1)
-     * @param progress
+     * @param pro
      */
-    private void handleTouchProgressChange(float progress) {
+    private void handleTouchProgressChange(float pro) {
+        //y = - [(x-1)*(x-1)] + 1
+        float progress = (float) (-(Math.pow(pro - 1f, 2d)) + 1);
         mLoadingView.setProgress(progress);
         if (mScale) {
             setAnimationProgress(progress);
@@ -492,6 +494,28 @@ public class SuperRefreshLayout extends ViewGroup {
         return ViewCompat.canScrollVertically(mTarget, -1);
     }
 
+    private float getMotionEventY(MotionEvent ev, int activePointerId) {
+        final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
+        if (index < 0) {
+            return -1;
+        }
+        return MotionEventCompat.getY(ev, index);
+    }
+
+    private float getMotionEventX(MotionEvent ev, int activePointerId) {
+        final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
+        if (index < 0) {
+            return -1;
+        }
+        return MotionEventCompat.getX(ev, index);
+    }
+
+    @Override
+    public void requestDisallowInterceptTouchEvent(boolean b) {
+        hasRequestDisallowIntercept = b;
+        // Nope.
+    }
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
         switch (ev.getAction()) {
@@ -516,7 +540,7 @@ public class SuperRefreshLayout extends ViewGroup {
                             mInitialDisPatchDownY != INVALID_POINTER && y != INVALID_POINTER) {
                         final float xDiff = Math.abs(x - mInitialDisPatchDownX);
                         final float yDiff = Math.abs(y - mInitialDisPatchDownY);
-                        if (xDiff > mTouchSlop && xDiff * 0.5f > yDiff) {
+                        if (xDiff > mTouchSlop && xDiff * 0.7f > yDiff) {
                             //横向滚动不需要拦截
                             super.requestDisallowInterceptTouchEvent(true);
                         } else {
@@ -573,7 +597,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
                 mIsBeingDragged = false;
                 final float initialDownY = getMotionEventY(ev, mActivePointerId);
-                if (initialDownY == INVALID_POINTER) {
+                if (initialDownY == -1) {
                     return false;
                 }
                 mInitialDownY = initialDownY;
@@ -586,7 +610,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 }
 
                 final float y = getMotionEventY(ev, mActivePointerId);
-                if (y == INVALID_POINTER) {
+                if (y == -1) {
                     return false;
                 }
                 if (mBothDirection) {
@@ -637,32 +661,6 @@ public class SuperRefreshLayout extends ViewGroup {
         }
 
         return mIsBeingDragged;
-    }
-
-    private float getMotionEventY(MotionEvent ev, int activePointerId) {
-        final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
-        if (index < 0) {
-            return INVALID_POINTER;
-        }
-        return MotionEventCompat.getY(ev, index);
-    }
-
-    private float getMotionEventX(MotionEvent ev, int activePointerId) {
-        final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
-        if (index < 0) {
-            return INVALID_POINTER;
-        }
-        return MotionEventCompat.getX(ev, index);
-    }
-
-    @Override
-    public void requestDisallowInterceptTouchEvent(boolean b) {
-        hasRequestDisallowIntercept = b;
-        // Nope.
-    }
-
-    private boolean isAnimationRunning(Animation animation) {
-        return animation != null && animation.hasStarted() && !animation.hasEnded();
     }
 
     @Override
