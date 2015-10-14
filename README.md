@@ -11,7 +11,8 @@
 6. 支持设置子View跟随手指滑动(非侵入式)
 7. 支持强制显示头部LoadingView.
 8. Activity的onStart方法中调用setRefreshing(true)方法.
-9. 拉动过程中不需要抬起手指,滑动更加顺滑.参考[滑动冲突解决-更顺滑的RefreshLayout](http://niorgai.github.io/2015/10/12/%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3-%E6%9B%B4%E9%A1%BA%E6%BB%91%E7%9A%84RefreshLayout/).
+9. onTouchEvent在滑动过程中联动子View,详情可以查看[滑动冲突解决-更顺滑的RefreshLayout](http://niorgai.github.io/2015/10/12/%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3-%E6%9B%B4%E9%A1%BA%E6%BB%91%E7%9A%84RefreshLayout/).
+10. 兼容ViewPager.
 
 # Example
 1. 设置不同的加载模式:
@@ -70,14 +71,14 @@
 		
 4. 支持`AbsListView.setEmptyView()`方法
 
-	`SwipeRefreshLayout`中使用ListView的话,setEmptyView的方法无法实现,这里采用的解决办法为:
+	`SwipeRefreshLayout`的`onMeasure()`,`onLayout()`方法都只对第一个子View调用,所以它只能放置一个直接子View.这时候如果使用ListView的话,setEmptyView的方法无法实现,这里采用的解决办法为:
 	
 		<niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout
 			xmlns:android="http://schemas.android.com/apk/res/android"
 		    android:layout_width="match_parent"
 		    android:layout_height="match_parent"
 		    android:orientation="vertical">
-		
+			//当然也可以是其他layout
 		    <RelativeLayout
 		        android:layout_width="match_parent"
 		        android:layout_height="match_parent">
@@ -100,7 +101,7 @@
 		//设置target是否跟随顶部LoadingView滑动,默认为false
 		public void setTargetScrollWithTop(boolean mTargetScrollWithTop)
 		
-		//设置target是否跟随底部LoadingView滑动,默认为true
+		//设置target是否跟随底部LoadingView滑动,默认为false
 		public void setTargetScrollWithBottom(boolean mTargetScrollWithBottom)
 		
 	可以实现非侵入式的加载效果.
@@ -113,3 +114,4 @@
 		...
 		//同样在刷新结束后调用
 		refreshLayout.setRefreshing(false);
+		

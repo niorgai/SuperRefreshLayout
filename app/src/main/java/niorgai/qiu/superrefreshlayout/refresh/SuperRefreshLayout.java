@@ -26,10 +26,10 @@ import niorgai.qiu.superrefreshlayout.R;
  */
 public class SuperRefreshLayout extends ViewGroup {
 
-    private static final float MAX_SWIPE_DISTANCE_FACTOR = .6f;
+    private static final float MAX_SWIPE_DISTANCE_FACTOR = .4f;
 
     //开始刷新的距离,距离顶部120dp
-    private static final int REFRESH_TRIGGER_DISTANCE = 120;
+    private static final int REFRESH_TRIGGER_DISTANCE = 100;
 
     private static final String LOG_TAG = SuperRefreshLayout.class.getSimpleName();
 
@@ -166,7 +166,7 @@ public class SuperRefreshLayout extends ViewGroup {
     private boolean mTargetScrollWithTop = false;
 
     //target是否跟随底部LoadingView滑动
-    private boolean mTargetScrollWithBottom = true;
+    private boolean mTargetScrollWithBottom = false;
 
     //是否强制显示LoadingView
     private boolean isForceShowLoadingView = false;
@@ -176,6 +176,18 @@ public class SuperRefreshLayout extends ViewGroup {
 
     //是否是同一点击事件序列中第一个拦截后应该处理的move事件
     private boolean isFirstMoveAfterIntercept = false;
+
+    //dispatch方法记录第一次按下的x
+    private float mInitialDisPatchDownX;
+
+    //dispatch方法记录第一次按下的y
+    private float mInitialDisPatchDownY;
+
+    //dispatch方法记录的手指
+    private int mActiveDispatchPointerId = INVALID_POINTER;
+
+    //是否请求拦截
+    private boolean hasRequestDisallowIntercept = false;
 
     /**
      * Simple constructor to use when creating a SwipeRefreshLayout from code.
@@ -482,12 +494,48 @@ public class SuperRefreshLayout extends ViewGroup {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
-        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
-            isFirstMoveAfterIntercept = true;
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                isFirstMoveAfterIntercept = true;
+                mActiveDispatchPointerId = MotionEventCompat.getPointerId(ev, 0);
+                final float initialDownX = getMotionEventX(ev, mActiveDispatchPointerId);
+                if (initialDownX != INVALID_POINTER) {
+                    mInitialDisPatchDownX = initialDownX;
+                }
+                final float initialDownY = getMotionEventY(ev, mActiveDispatchPointerId);
+                if (mInitialDisPatchDownY != INVALID_POINTER) {
+                    mInitialDisPatchDownY = initialDownY;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (hasRequestDisallowIntercept) {
+                    //解决viewPager滑动冲突问题
+                    final float x = getMotionEventX(ev, mActiveDispatchPointerId);
+                    final float y = getMotionEventY(ev, mActiveDispatchPointerId);
+                    if (mInitialDisPatchDownX != INVALID_POINTER && x != INVALID_POINTER &&
+                            mInitialDisPatchDownY != INVALID_POINTER && y != INVALID_POINTER) {
+                        final float xDiff = Math.abs(x - mInitialDisPatchDownX);
+                        final float yDiff = Math.abs(y - mInitialDisPatchDownY);
+                        if (xDiff > mTouchSlop && xDiff * 0.5f > yDiff) {
+                            //横向滚动不需要拦截
+                            super.requestDisallowInterceptTouchEvent(true);
+                        } else {
+                            super.requestDisallowInterceptTouchEvent(false);
+                        }
+                    } else {
+                        super.requestDisallowInterceptTouchEvent(false);
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
+                    isFirstMoveAfterIntercept = false;
+                    hasRequestDisallowIntercept = false;
+                }
+                break;
         }
-        if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) {
-            isFirstMoveAfterIntercept = false;
-        }
+
         return super.dispatchTouchEvent(ev);
     }
 
@@ -525,7 +573,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 mActivePointerId = MotionEventCompat.getPointerId(ev, 0);
                 mIsBeingDragged = false;
                 final float initialDownY = getMotionEventY(ev, mActivePointerId);
-                if (initialDownY == -1) {
+                if (initialDownY == INVALID_POINTER) {
                     return false;
                 }
                 mInitialDownY = initialDownY;
@@ -538,7 +586,7 @@ public class SuperRefreshLayout extends ViewGroup {
                 }
 
                 final float y = getMotionEventY(ev, mActivePointerId);
-                if (y == -1) {
+                if (y == INVALID_POINTER) {
                     return false;
                 }
                 if (mBothDirection) {
@@ -594,13 +642,22 @@ public class SuperRefreshLayout extends ViewGroup {
     private float getMotionEventY(MotionEvent ev, int activePointerId) {
         final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
         if (index < 0) {
-            return -1;
+            return INVALID_POINTER;
         }
         return MotionEventCompat.getY(ev, index);
     }
 
+    private float getMotionEventX(MotionEvent ev, int activePointerId) {
+        final int index = MotionEventCompat.findPointerIndex(ev, activePointerId);
+        if (index < 0) {
+            return INVALID_POINTER;
+        }
+        return MotionEventCompat.getX(ev, index);
+    }
+
     @Override
     public void requestDisallowInterceptTouchEvent(boolean b) {
+        hasRequestDisallowIntercept = b;
         // Nope.
     }
 
