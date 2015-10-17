@@ -8,7 +8,6 @@
 2. 自定义LoadingView
 4. LoadingView可以根据拉动的百分比(拉伸\透明)变化.
 5. 支持`AbsListView.setEmptyView()`方法
-6. 支持设置子View跟随手指滑动(非侵入式)
 7. 支持强制显示头部LoadingView.
 8. Activity的onStart方法中调用setRefreshing(true)方法.
 9. onTouchEvent在滑动过程中联动子View,详情可以查看[滑动冲突解决-联动子View](http://niorgai.github.io/2015/10/12/%E6%BB%91%E5%8A%A8%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3-%E8%81%94%E5%8A%A8%E5%AD%90View/).
@@ -95,16 +94,7 @@
 		</niorgai.qiu.superrefreshlayout.refresh.SuperRefreshLayout>
 		
 	项目中我重写了EmptyView的`onTouchEvent`方法,一直返回true.如果不想重写也可以在EmptyView外面包一层ScrollView.同时设置ScrollView的属性`android:fillViewport="true"`即可.
-	
-5. `SwipeRefreshLayout`是侵入式的设计,即子View不会跟随LoadingView滑动,现在增加方法
 
-		//设置target是否跟随顶部LoadingView滑动,默认为false
-		public void setTargetScrollWithTop(boolean mTargetScrollWithTop)
-		
-		//设置target是否跟随底部LoadingView滑动,默认为false
-		public void setTargetScrollWithBottom(boolean mTargetScrollWithBottom)
-		
-	可以实现非侵入式的加载效果.
 	
 6. 如果一个Activity只能从底部上拉加载更多,当进入该Activity时,第一次加载数据的操作其实是从顶部下拉刷新,一般处理方法为显示一个Loading遮罩层.但我希望可以在进入时显示顶部的LoadingView,这样可以更加直观.
 

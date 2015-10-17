@@ -33,9 +33,6 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private static final String LOG_TAG = SuperRefreshLayout.class.getSimpleName();
 
-    //刷新的View的大小 = 25dp
-    private static final int CIRCLE_DIAMETER = 25;
-
     private static final float DECELERATE_INTERPOLATION_FACTOR = 2f;
     private static final int INVALID_POINTER = -1;
     private static final float DRAG_RATE = .5f;
@@ -56,12 +53,6 @@ public class SuperRefreshLayout extends ViewGroup {
     //是否被手指拉动(在onInterceptTouchEvent中拦截时置为true)
     private boolean mIsBeingDragged;
     private int mActivePointerId = INVALID_POINTER;
-
-    // 拉动过程中是否需要对LoadingView进行scale
-    private boolean mScale = true;
-
-    // 拉动过程中是否需要对LoadingView透明
-    private boolean mAlpha = true;
 
     // Target is returning to its start offset because it was cancelled or a
     // refresh was triggered.
@@ -92,10 +83,6 @@ public class SuperRefreshLayout extends ViewGroup {
      * 是否是滑动触发的通知,滑动时mNotify为true,不滑动(代码调用setRefresh())时为false
      */
     private boolean mNotify;
-
-    private int mLoadingViewWidth;
-
-    private int mLoadingViewHeight;
 
     //刷新动态的Listener,在动画结束时刷新结束
     private Animation.AnimationListener mRefreshListener = new Animation.AnimationListener() {
@@ -162,12 +149,6 @@ public class SuperRefreshLayout extends ViewGroup {
 
     private SuperRefreshListener2 mSuperRefreshListener2;
 
-    //target是否跟随顶部LoadingView滑动
-    private boolean mTargetScrollWithTop = false;
-
-    //target是否跟随底部LoadingView滑动
-    private boolean mTargetScrollWithBottom = false;
-
     //是否强制显示LoadingView
     private boolean isForceShowLoadingView = false;
 
@@ -188,6 +169,23 @@ public class SuperRefreshLayout extends ViewGroup {
 
     //是否请求拦截
     private boolean hasRequestDisallowIntercept = false;
+
+    // 拉动过程中是否需要对LoadingView进行scale
+    private boolean mScale = true;
+
+    // 拉动过程中是否需要对LoadingView透明
+    private boolean mAlpha = true;
+
+    //顶部LoadingView的大小
+    private static final int TOP_CIRCLE_DIAMETER = 30;
+
+    private int mTopLoadingViewLength;
+
+    //底部LoadingView的大小
+    private static final int BOTTOM_CIRCLE_DIAMETER = 25;
+
+    private int mBottomLoadingViewLength;
+
 
     /**
      * Simple constructor to use when creating a SwipeRefreshLayout from code.
@@ -231,8 +229,8 @@ public class SuperRefreshLayout extends ViewGroup {
         a.recycle();
 
         final DisplayMetrics metrics = getResources().getDisplayMetrics();
-        mLoadingViewWidth = (int) (CIRCLE_DIAMETER * metrics.density);
-        mLoadingViewHeight = (int) (CIRCLE_DIAMETER * metrics.density);
+        mTopLoadingViewLength = (int) (TOP_CIRCLE_DIAMETER * metrics.density);
+        mBottomLoadingViewLength = (int) (BOTTOM_CIRCLE_DIAMETER * metrics.density);
 
         createTopLoadingView();
         createBottomLoadingView();
@@ -425,23 +423,9 @@ public class SuperRefreshLayout extends ViewGroup {
         }
         final View child = mTarget;
         final int childLeft = getPaddingLeft();
-        int childTop = getPaddingTop();
+        final int childTop = getPaddingTop();
         final int childWidth = width - getPaddingLeft() - getPaddingRight();
         final int childHeight = height - getPaddingTop() - getPaddingBottom();
-        //判断target是否跟随LoadingView滑动
-        switch (mDirection) {
-            case PULL_FROM_BOTTOM:
-                if (mTargetScrollWithBottom) {
-                    childTop = getPaddingTop() + mCurrentTargetOffsetTop - childHeight;
-                }
-                break;
-            case PULL_FROM_TOP:
-            default:
-                if (mTargetScrollWithTop) {
-                    childTop = getPaddingTop() + mCurrentTargetOffsetTop;
-                }
-                break;
-        }
         child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
         int circleWidth = mLoadingView.getMeasuredWidth();
         int circleHeight = mLoadingView.getMeasuredHeight();
@@ -463,8 +447,13 @@ public class SuperRefreshLayout extends ViewGroup {
                 MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(
                 getMeasuredHeight() - getPaddingTop() - getPaddingBottom(), MeasureSpec.EXACTLY));
         if (mLoadingView != null) {
-            mLoadingView.measure(MeasureSpec.makeMeasureSpec(mLoadingViewWidth, MeasureSpec.EXACTLY),
-                    MeasureSpec.makeMeasureSpec(mLoadingViewHeight, MeasureSpec.EXACTLY));
+            if (mLoadingView instanceof TopLoadingView) {
+                mLoadingView.measure(MeasureSpec.makeMeasureSpec(mTopLoadingViewLength, MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(mTopLoadingViewLength, MeasureSpec.EXACTLY));
+            } else {
+                mLoadingView.measure(MeasureSpec.makeMeasureSpec(mBottomLoadingViewLength, MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(mBottomLoadingViewLength, MeasureSpec.EXACTLY));
+            }
         }
         mTopLoadingViewIndex = -1;
         // Get the index of the loadingView.
@@ -1102,22 +1091,6 @@ public class SuperRefreshLayout extends ViewGroup {
      */
     public void setBottomLoadingView(CommonLoadingView mBottomLoadingView) {
         this.mBottomLoadingView = mBottomLoadingView;
-    }
-
-    /**
-     * 设置target是否跟随顶部LoadingView滑动,默认为false
-     * @param mTargetScrollWithTop
-     */
-    public void setTargetScrollWithTop(boolean mTargetScrollWithTop) {
-        this.mTargetScrollWithTop = mTargetScrollWithTop;
-    }
-
-    /**
-     * 设置target是否跟随底部LoadingView滑动,默认为true
-     * @param mTargetScrollWithBottom
-     */
-    public void setTargetScrollWithBottom(boolean mTargetScrollWithBottom) {
-        this.mTargetScrollWithBottom = mTargetScrollWithBottom;
     }
 
     /**
