@@ -2,8 +2,10 @@ package niorgai.qiu.superrefreshlayout.refresh;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 
 import niorgai.qiu.superrefreshlayout.R;
 
@@ -13,8 +15,9 @@ import niorgai.qiu.superrefreshlayout.R;
  */
 public class BottomLoadingView extends CommonLoadingView{
 
-    private ProgressBar progress;
-    private ImageView imageView;
+    private RotateAnimation rotateAnimation;
+
+    private ImageView loadingImageView;
 
     public BottomLoadingView(Context context) {
         this(context, null);
@@ -22,27 +25,31 @@ public class BottomLoadingView extends CommonLoadingView{
 
     public BottomLoadingView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        inflate(context, R.layout.bottom_refresh_layout, this);
-        progress = (ProgressBar) findViewById(R.id.progress);
-        imageView = (ImageView) findViewById(R.id.img);
-        progress.setVisibility(GONE);
+        loadingImageView = new ImageView(context);
+        loadingImageView.setImageResource(R.drawable.loading_rotate);
+        addView(loadingImageView);
+
+        rotateAnimation = new RotateAnimation(0, 1080, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        rotateAnimation.setRepeatCount(-1);
+        rotateAnimation.setInterpolator(new LinearInterpolator());
+        rotateAnimation.setDuration(2000);
+        rotateAnimation.setFillAfter(true);
     }
 
     public void setProgress(float pre) {
-    }
-
-    public void startAnimation(){
-        imageView.setVisibility(GONE);
-        progress.setVisibility(VISIBLE);
-    }
-
-    public void stopAnimation(){
-        imageView.setVisibility(VISIBLE);
-        progress.setVisibility(GONE);
+        loadingImageView.setRotation(pre * 360);
     }
 
     public void setViewAlpha(float alpha) {
-        progress.setAlpha(alpha);
+        loadingImageView.setAlpha(alpha);
+    }
+
+    public void startAnimation(){
+        loadingImageView.startAnimation(rotateAnimation);
+    }
+
+    public void stopAnimation(){
+        rotateAnimation.cancel();
     }
 
 }
