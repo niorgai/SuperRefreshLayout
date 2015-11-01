@@ -1,5 +1,6 @@
 # SuperRefreshLayout
 支持上拉、下拉的Layout, SDK >= 14.
+感谢[SwipyRefreshLayout](https://github.com/OrangeGangsters/SwipyRefreshLayout)
 
 由SwipeRefreshLayout的源码更改而来
 主要支持以下特性:
