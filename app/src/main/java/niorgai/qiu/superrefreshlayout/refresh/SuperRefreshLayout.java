@@ -3,6 +3,10 @@ package niorgai.qiu.superrefreshlayout.refresh;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.support.v4.view.MotionEventCompat;
+import android.support.v4.view.NestedScrollingChild;
+import android.support.v4.view.NestedScrollingChildHelper;
+import android.support.v4.view.NestedScrollingParent;
+import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
@@ -24,7 +28,7 @@ import niorgai.qiu.superrefreshlayout.R;
  * 自定义的刷新Layout
  * Created by qiu on 9/8/15.
  */
-public class SuperRefreshLayout extends ViewGroup {
+public class SuperRefreshLayout extends ViewGroup implements NestedScrollingParent, NestedScrollingChild {
 
     private static final float MAX_SWIPE_DISTANCE_FACTOR = .4f;
 
@@ -78,6 +82,12 @@ public class SuperRefreshLayout extends ViewGroup {
     protected int mOriginalOffsetTop;
 
     private float mSpinnerFinalOffset;
+
+    //嵌套滚动
+    private float mTotalUnconsumed;
+    private final NestedScrollingParentHelper mNestedScrollingParentHelper;
+    private final NestedScrollingChildHelper mNestedScrollingChildHelper;
+    private final int[] mParentScrollConsumed = new int[2];
 
     /**
      * 是否是滑动触发的通知,滑动时mNotify为true,不滑动(代码调用setRefresh())时为false
@@ -238,6 +248,11 @@ public class SuperRefreshLayout extends ViewGroup {
         ViewCompat.setChildrenDrawingOrderEnabled(this, true);
         // the absolute offset has to take into account that the circle starts at an offset
         mSpinnerFinalOffset = DEFAULT_CIRCLE_TARGET * metrics.density;
+
+        mNestedScrollingParentHelper = new NestedScrollingParentHelper(this);
+
+        mNestedScrollingChildHelper = new NestedScrollingChildHelper(this);
+        setNestedScrollingEnabled(true);
     }
 
     //绘制子View的顺序
@@ -650,6 +665,198 @@ public class SuperRefreshLayout extends ViewGroup {
         }
 
         return mIsBeingDragged;
+    }
+
+    //嵌套滚动
+    @Override
+    public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
+        if (isEnabled() && (nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL) != 0) {
+            // Dispatch up to the nested parent
+            startNestedScroll(nestedScrollAxes & ViewCompat.SCROLL_AXIS_VERTICAL);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public void onNestedScrollAccepted(View child, View target, int axes) {
+        // Reset the counter of how much leftover scroll needs to be consumed.
+        mNestedScrollingParentHelper.onNestedScrollAccepted(child, target, axes);
+        mTotalUnconsumed = 0;
+    }
+
+    @Override
+    public void onNestedPreScroll(View target, int dx, int dy, int[] consumed) {
+        // If we are in the middle of consuming, a scroll, then we want to move the spinner back up
+        // before allowing the list to scroll
+        if (dy > 0 && mTotalUnconsumed > 0) {
+            if (dy > mTotalUnconsumed) {
+                consumed[1] = dy - (int) mTotalUnconsumed;
+                mTotalUnconsumed = 0;
+            } else {
+                mTotalUnconsumed -= dy;
+                consumed[1] = dy;
+
+            }
+            moveSpinner(mTotalUnconsumed);
+        }
+
+        // Now let our nested parent consume the leftovers
+        final int[] parentConsumed = mParentScrollConsumed;
+        if (dispatchNestedPreScroll(dx - consumed[0], dy - consumed[1], parentConsumed, null)) {
+            consumed[0] += parentConsumed[0];
+            consumed[1] += parentConsumed[1];
+        }
+    }
+
+    @Override
+    public int getNestedScrollAxes() {
+        return mNestedScrollingParentHelper.getNestedScrollAxes();
+    }
+
+    @Override
+    public void onStopNestedScroll(View target) {
+        mNestedScrollingParentHelper.onStopNestedScroll(target);
+        // Finish the spinner for nested scrolling if we ever consumed any
+        // unconsumed nested scroll
+        if (mTotalUnconsumed > 0) {
+            finishSpinner(mTotalUnconsumed);
+            mTotalUnconsumed = 0;
+        }
+        // Dispatch up our nested parent
+        stopNestedScroll();
+    }
+
+    @Override
+    public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed,
+                               int dyUnconsumed) {
+        if (dyUnconsumed < 0) {
+            dyUnconsumed = Math.abs(dyUnconsumed);
+            mTotalUnconsumed += dyUnconsumed;
+            moveSpinner(mTotalUnconsumed);
+        }
+        // Dispatch up to the nested parent
+        dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dxConsumed, null);
+    }
+
+    // NestedScrollingChild
+
+    @Override
+    public boolean onNestedPreFling(View target, float velocityX, float velocityY) {
+        return false;
+    }
+
+    @Override
+    public boolean onNestedFling(View target, float velocityX, float velocityY, boolean consumed) {
+        return false;
+    }
+
+    @Override
+    public void setNestedScrollingEnabled(boolean enabled) {
+        mNestedScrollingChildHelper.setNestedScrollingEnabled(enabled);
+    }
+
+    @Override
+    public boolean isNestedScrollingEnabled() {
+        return mNestedScrollingChildHelper.isNestedScrollingEnabled();
+    }
+
+    @Override
+    public boolean startNestedScroll(int axes) {
+        return mNestedScrollingChildHelper.startNestedScroll(axes);
+    }
+
+    @Override
+    public void stopNestedScroll() {
+        mNestedScrollingChildHelper.stopNestedScroll();
+    }
+
+    @Override
+    public boolean hasNestedScrollingParent() {
+        return mNestedScrollingChildHelper.hasNestedScrollingParent();
+    }
+
+    @Override
+    public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed,
+                                        int dyUnconsumed, int[] offsetInWindow) {
+        return mNestedScrollingChildHelper.dispatchNestedScroll(dxConsumed, dyConsumed,
+                dxUnconsumed, dyUnconsumed, offsetInWindow);
+    }
+
+    @Override
+    public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow) {
+        return mNestedScrollingChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
+    }
+
+    @Override
+    public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
+        return mNestedScrollingChildHelper.dispatchNestedFling(velocityX, velocityY, consumed);
+    }
+
+    @Override
+    public boolean dispatchNestedPreFling(float velocityX, float velocityY) {
+        return mNestedScrollingChildHelper.dispatchNestedPreFling(velocityX, velocityY);
+    }
+
+    private void moveSpinner(float overscrollTop) {
+        float originalDragPercent = overscrollTop / mTotalDragDistance;
+
+        float dragPercent = Math.min(1f, Math.abs(originalDragPercent));
+        float adjustedPercent = (float) Math.max(dragPercent - .4, 0) * 5 / 3;
+        float extraOS = Math.abs(overscrollTop) - mTotalDragDistance;
+        float slingshotDist = mSpinnerFinalOffset;
+        float tensionSlingshotPercent = Math.max(0, Math.min(extraOS, slingshotDist * 2)
+                / slingshotDist);
+        float tensionPercent = (float) ((tensionSlingshotPercent / 4) - Math.pow(
+                (tensionSlingshotPercent / 4), 2)) * 2f;
+        float extraMove = (slingshotDist) * tensionPercent * 2;
+
+        int targetY = mOriginalOffsetTop + (int) ((slingshotDist * dragPercent) + extraMove);
+        // where 1.0f is a full circle
+        if (mLoadingView.getVisibility() != View.VISIBLE) {
+            mLoadingView.setVisibility(View.VISIBLE);
+        }
+        if (!mScale) {
+            ViewCompat.setScaleX(mLoadingView, 1f);
+            ViewCompat.setScaleY(mLoadingView, 1f);
+        }
+        if (overscrollTop < mTotalDragDistance) {
+            if (mScale) {
+                setAnimationProgress(overscrollTop / mTotalDragDistance);
+            }
+        }
+        setTargetOffsetTopAndBottom(targetY - mCurrentTargetOffsetTop);
+    }
+
+    private void finishSpinner(float overscrollTop) {
+        if (overscrollTop > mTotalDragDistance) {
+            setRefreshing(true, true /* notify */);
+        } else {
+            // cancel refresh
+            mRefreshing = false;
+            Animation.AnimationListener listener = null;
+            if (!mScale) {
+                listener = new Animation.AnimationListener() {
+
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        if (!mScale) {
+                            startScaleDownAnimation(null);
+                        }
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+                    }
+
+                };
+            }
+            animateOffsetToStartPosition(mCurrentTargetOffsetTop, listener);
+        }
     }
 
     @Override
