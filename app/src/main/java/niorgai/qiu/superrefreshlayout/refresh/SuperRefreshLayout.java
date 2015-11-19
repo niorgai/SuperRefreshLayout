@@ -829,7 +829,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
     }
 
     private void finishSpinner(float overscrollTop) {
-        if (overscrollTop > mTotalDragDistance) {
+        if (mIsBeingDragged && overscrollTop > mTotalDragDistance) {
             setRefreshing(true, true /* notify */);
         } else {
             // cancel refresh
