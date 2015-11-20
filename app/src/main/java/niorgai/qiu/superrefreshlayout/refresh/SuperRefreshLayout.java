@@ -379,6 +379,9 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
      * Loading动作结束后消失的动画
      * 改为向上滑动消失*/
     private void startScaleDownAnimation(Animation.AnimationListener listener) {
+        if (isForceShowLoadingView) {
+            mCurrentTargetOffsetTop = (int) (getResources().getDisplayMetrics().density * REFRESH_TRIGGER_DISTANCE);
+        }
         animateOffsetToStartPosition(mCurrentTargetOffsetTop, listener);
     }
 
@@ -1307,7 +1310,13 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         isForceShowLoadingView = true;
         tempDirection = mDirection;
         setCurrentSwipeDirection(RefreshDirection.PULL_FROM_TOP);
-        setRefreshing(true);
+        mRefreshing = true;
+        mNotify = false;
+        final int end = (int) (getResources().getDisplayMetrics().density * REFRESH_TRIGGER_DISTANCE);
+        setTargetOffsetTopAndBottom(end);
+        mTotalDragDistance = mSpinnerFinalOffset = mCurrentTargetOffsetTop = end;
+        mLoadingView.setVisibility(View.VISIBLE);
+        mLoadingView.startAnimation();
     }
 
     /**
