@@ -83,6 +83,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
 
     private float mSpinnerFinalOffset;
 
+    private float mDensity;
+
     //嵌套滚动
     private float mTotalUnconsumed;
     private final NestedScrollingParentHelper mNestedScrollingParentHelper;
@@ -239,6 +241,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         a.recycle();
 
         final DisplayMetrics metrics = getResources().getDisplayMetrics();
+        mDensity = metrics.density;
         mTopLoadingViewLength = (int) (TOP_CIRCLE_DIAMETER * metrics.density);
         mBottomLoadingViewLength = (int) (BOTTOM_CIRCLE_DIAMETER * metrics.density);
 
@@ -380,7 +383,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
      * 改为向上滑动消失*/
     private void startScaleDownAnimation(Animation.AnimationListener listener) {
         if (isForceShowLoadingView) {
-            mCurrentTargetOffsetTop = (int) (getResources().getDisplayMetrics().density * REFRESH_TRIGGER_DISTANCE);
+            mCurrentTargetOffsetTop = (int) (mDensity * REFRESH_TRIGGER_DISTANCE);
         }
         animateOffsetToStartPosition(mCurrentTargetOffsetTop, listener);
     }
@@ -409,10 +412,9 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         //设置开始Loading的距离
         if (mTotalDragDistance == -1) {
             if (getParent() != null && ((View)getParent()).getHeight() > 0) {
-                final DisplayMetrics metrics = getResources().getDisplayMetrics();
                 mTotalDragDistance = (int) Math.min(
                         ((View) getParent()) .getHeight() * MAX_SWIPE_DISTANCE_FACTOR,
-                        REFRESH_TRIGGER_DISTANCE * metrics.density);
+                        REFRESH_TRIGGER_DISTANCE * mDensity);
             }
         }
     }
@@ -438,6 +440,9 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         }
         if (mTarget == null) {
             return;
+        }
+        if (isForceShowLoadingView) {
+            mCurrentTargetOffsetTop = (int) (mDensity * REFRESH_TRIGGER_DISTANCE);
         }
         final View child = mTarget;
         final int childLeft = getPaddingLeft();
@@ -1312,10 +1317,11 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         setCurrentSwipeDirection(RefreshDirection.PULL_FROM_TOP);
         mRefreshing = true;
         mNotify = false;
-        final int end = (int) (getResources().getDisplayMetrics().density * REFRESH_TRIGGER_DISTANCE);
+        final int end = (int) (mDensity * REFRESH_TRIGGER_DISTANCE);
         setTargetOffsetTopAndBottom(end);
         mTotalDragDistance = mSpinnerFinalOffset = mCurrentTargetOffsetTop = end;
         mLoadingView.setVisibility(View.VISIBLE);
+        mLoadingView.clearAnimation();
         mLoadingView.startAnimation();
     }
 
