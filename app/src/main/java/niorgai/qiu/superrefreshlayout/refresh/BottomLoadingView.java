@@ -19,6 +19,8 @@ public class BottomLoadingView extends CommonLoadingView{
 
     private ImageView loadingImageView;
 
+    private boolean isAnimating = false;
+
     public BottomLoadingView(Context context) {
         this(context, null);
     }
@@ -37,7 +39,14 @@ public class BottomLoadingView extends CommonLoadingView{
     }
 
     public void setProgress(float pre) {
-        loadingImageView.setRotation(pre * 360);
+        loadingImageView.setRotation(pre * 1080);
+        if (pre > 0.99) {
+            if (!isAnimating) {
+                startAnimation();
+            }
+        } else {
+            stopAnimation();
+        }
     }
 
     public void setViewAlpha(float alpha) {
@@ -46,10 +55,12 @@ public class BottomLoadingView extends CommonLoadingView{
 
     public void startAnimation(){
         loadingImageView.startAnimation(rotateAnimation);
+        isAnimating = true;
     }
 
     public void stopAnimation(){
         rotateAnimation.cancel();
+        isAnimating = false;
     }
 
 }
