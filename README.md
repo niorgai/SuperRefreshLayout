@@ -1,5 +1,8 @@
 # SuperRefreshLayout
 
+@Deprecated
+弃用,改为[RefreshView](https://github.com/niorgai/RefreshView)
+
 支持上拉、下拉的Layout, SDK >= 14.
 感谢[SwipyRefreshLayout](https://github.com/OrangeGangsters/SwipyRefreshLayout)
 
